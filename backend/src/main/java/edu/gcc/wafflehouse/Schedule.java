@@ -2,25 +2,29 @@ package edu.gcc.wafflehouse;
 
 import java.util.ArrayList;
 
+
+/**
+ * Interface for organizing courses / wrapper class for ArrayList of Courses
+ * @author Ina Tang
+ */
 public class Schedule {
-    private ArrayList<Course> schedule;
-    private Student student;
+    private ArrayList<Course> courses;
 
-    public Schedule(ArrayList<Course> schedule, Student s) {
-        this.schedule = schedule;
-        this.student = s;
-    }
-
+    // Constructors
     public Schedule() {
-        this.schedule = new ArrayList<Course>();
-        this.student = new Student();
+        this.courses = new ArrayList<Course>();
     }
 
-    public ArrayList<Course> getSchedule() {
-        return schedule;
+    public Schedule(ArrayList<Course> courses) {
+        this.courses = courses;
     }
+
+    // Methods
+    public ArrayList<Course> getCourses() {
+        return courses;
+    }
+
     public void addCourse(Course c) {
-        schedule.add(c);
+        courses.add(c);
     }
-
 }
