@@ -43,7 +43,42 @@ public class Course {
         this.semester = semester;
         this.times = times;
         this.id = nextId++;
+    }
 
+    public String getName() {
+        return name;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public Professor getProf() {
+        return prof;
+    }
+
+    public int getCreditHours() {
+        return creditHours;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public int getSemester() {
+        return semester;
+    }
+
+    public ArrayList<Timeslot> getTimes() {
+        return times;
     }
 
     public long getId() {
