@@ -75,10 +75,11 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
         {/* Number of credits: Number input */}
         <Field>
             <FieldLabel htmlFor="credit">Number of credits</FieldLabel>
-            <RangeInput id="credit"
-                minPlaceholder="Min" maxPlaceholder="Max"
-                type="number" min="1" max="4" step="1"
-            />
+            <Input id="credit" name="credit-hours" type="number" />
+             {/*<RangeInput id="credit" name="credit-hours"
+//                 minPlaceholder="Min" maxPlaceholder="Max"
+//                 type="number" min="1" max="4" step="1"
+//             />*/}
         </Field>
 
 
@@ -118,17 +119,21 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
         {/* Start and end time: RangeInput */}
         <Field>
             <FieldLabel htmlFor="time">Time range</FieldLabel>
-            <RangeInput id="time"
+            <Input id="credit" name="start-time" type="time" min="08:00" max="21:00" step="900"/>
+            <Input id="credit" name="end-time" type="time" min="08:00" max="21:00" step="900"/>
+            {/*}<RangeInput id="time"
                         minDefaultValue="08:00" maxDefaultValue="21:00"
                         type="time" min="08:00" max="21:00" step="900"
-            />
+            />*/}
         </Field>
         {/*    TODO: make sure Time range has a sufficient min width for showing AM/PM info*/}
 
         {/* Professor: Multiselect */}
         <Field>
             <FieldLabel htmlFor="professor">Professor</FieldLabel>
-            <Combobox
+            <Select id="professor" name="professor" placeholder="Select prof..." />
+
+            {/*<Combobox
                 multiple
                 autoHighlight
                 items={professors}
@@ -140,7 +145,7 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
                                 {values.map((value: string) => (
                                     <ComboboxChip key={value}>{value}</ComboboxChip>
                                 ))}
-                                <ComboboxChipsInput id="professor" placeholder="Select prof(s)..."/>
+                                <ComboboxChipsInput id="professor" name="professor" placeholder="Select prof(s)..."/>
                             </React.Fragment>
                         )}
                     </ComboboxValue>
@@ -155,7 +160,7 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
                         )}
                     </ComboboxList>
                 </ComboboxContent>
-            </Combobox>
+            </Combobox>*/}
         </Field>
 
         {/* TODO: Semester */}

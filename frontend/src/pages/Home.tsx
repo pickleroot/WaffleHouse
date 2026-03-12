@@ -10,18 +10,40 @@ import * as React from "react";
 import FilterGroup from "@/components/FilterGroup.tsx";
 
 // TODO: Replace with actual response type from Java API
+// interface Course {
+//     id: number
+//     name: string
+//     description: string
+// }
+
 interface Course {
     id: number
     name: string
-    description: string
-}
+    code: number
+    department: string
+    professor: string
+    creditHours: number
+    year: number
+    semester: number
+    times: Date[]
+};
 
 // TODO: Update columns to match actual API response fields
+// const columns: ColumnDef<Course>[] = [
+//     { accessorKey: "id", header: "ID" },
+//     { accessorKey: "name", header: "Name" },
+//     { accessorKey: "description", header: "Description" },
+// ]
+
 const columns: ColumnDef<Course>[] = [
-    { accessorKey: "id", header: "ID" },
-    { accessorKey: "name", header: "Name" },
-    { accessorKey: "description", header: "Description" },
-]
+    { accessorKey: "department", header: "Department" },
+    { accessorKey: "code", header: "Course code" },
+    { accessorKey: "name", header: "Course name" },
+    { accessorKey: "creditHours", header: "Credit hours" },
+    { accessorKey: "professor", header: "Professor" },
+    { accessorKey: "time", header: "Days & Time" },
+//     { accessorKey: "capacity", header: "Capacity" },
+];
 
 // TODO: Remove sample data once real API is connected
 const SAMPLE_COURSES: Course[] = [
@@ -71,22 +93,34 @@ export default function Home() {
     }, [mode])
 
     const handleSearch = async (e: React.SubmitEvent) => {
-        e.preventDefault()
-        if (!query.trim()) return
+        e.preventDefault();
+        if (!query.trim()) return;
 
-        // TODO: Replace with actual API endpoint
-        // const response = await fetch(`/api/courses/search?q=${encodeURIComponent(query.trim())}`)
-        // const data: Course[] = await response.json()
-        // setResults(data)
+        const res = await fetch(`http://localhost:7000/search?q=${query}`);
+        const searchRes: Course[] = await response.json();
+        setResults(searchRes);
 
-        // Sample data filtering for testing (remove once API is connected)
-        const q = query.trim().toLowerCase()
-        const filtered = SAMPLE_COURSES.filter(
-            (c) =>
-                c.name.toLowerCase().includes(q) ||
-                c.description.toLowerCase().includes(q)
-        )
-        setResults(filtered)
+//         // Sample data filtering for testing (remove once API is connected)
+//         const q = query.trim().toLowerCase()
+//         const filtered = SAMPLE_COURSES.filter(
+//             (c) =>
+//                 c.name.toLowerCase().includes(q) ||
+//                 c.description.toLowerCase().includes(q)
+//         )
+//         setResults(filtered)
+    }
+
+    const handleFilter = async (e: React.SubmitEvent) => {
+        e.preventDefault();
+        const res = await fetch(`http://localhost:7000/filters`, {
+            method: "POST",
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(postData)
+        });
+        const filterRes: Course[] = await response.json();
+        setResults(filterRes);
     }
 
     return (
@@ -225,13 +259,15 @@ export default function Home() {
                 {/* Search results */}
                 {mode === "search" && results.length > 0 && (
                     <div className="block min-w-4/5 mt-8">
-                    <FilterGroup className="p-4 bg-neutral-50" />
-
-                    <div className="flex-1 flex flex-col items-center px-6 pt-8">
-                        <div className="w-full max-w-4xl mx-auto">
-                            <DataTable columns={columns} data={results} />
+                        <form onSubmit={handleFilter}>
+                            <FilterGroup className="p-4 bg-neutral-50" />
+                            {/* TODO: update filter in backend */}
+                        </form>
+                        <div className="flex-1 flex flex-col items-center px-6 pt-8">
+                            <div className="w-full max-w-4xl mx-auto">
+                                <DataTable columns={columns} data={results} />
+                            </div>
                         </div>
-                    </div>
                     </div>
                 )}
 

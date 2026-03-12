@@ -33,7 +33,8 @@ public class Search {
         // I.e., this is a OR, not AND gate, as opposed to getFilteredResults
 
         this.results = results;
-        return results;
+//        return results;
+        return courses;
     }
 
     /**
