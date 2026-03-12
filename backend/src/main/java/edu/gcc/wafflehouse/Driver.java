@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 /**
  * Controller / Router
- * @author Tim (last edited: Ina Tang)
+ * @author Ina Tang
  */
 public class Driver {
 
@@ -18,8 +18,7 @@ public class Driver {
 
         // Search database
         app.get("/search", ctx -> {
-            // Get query
-            String query = ctx.queryParam("q");
+            String query = ctx.queryParam("q");  // get query
 
             // Handle cases where the query parameter is missing or empty
             if (query == null || query.isEmpty()) {
@@ -27,30 +26,31 @@ public class Driver {
                 ctx.result("Missing 'query' parameter");
             }
 
-            // Search
-            ArrayList<Course> results = search.search(query);
+            ArrayList<Course> results = search.search(query);  // Search
             ctx.json(results);  // return results in JSON
         });
 
-        // Get cached search results, filtered according to the latest filter inputs
-        app.get("/filter", ctx -> {
+        // Update filters in the backend and returns the up-to-date filtered cached results
+        app.post("/filters", ctx -> {
+            // Receive and parse the request body
+            FilterRequest req = ctx.bodyAsClass(FilterRequest.class);
+
             // Hardcoding all the filter names and parsing their queryParams one by one
             // NOTE: this is actually easier than using a List of filters
             //       b/c we need 1-1 correspondence btw data and the specific filter
-            String courseName = ctx.queryParam("name");
-            String professor = ctx.queryParam("prof");
-            String department = ctx.queryParam("dept");
-            String timeslot = ctx.queryParam("time");
-            String credits = ctx.queryParam("credits");
 
             // Set all inputs for the filters
-            search.nameFilter.setInput(courseName);
-            search.profFilter.setInput(professor);
-            // TODO: finish the rest (some also need to be implemented)
-            // TODO: (sprint 2) make it more secure by switching to private variables?
-            // TODO: Either here or in Search, make sure the Filter does nothing when the input is null
+            search.nameFilter.setInput(req.name);
+            search.profFilter.setInput(req.prof);
+            // TODO: uncomment this after deptFilter is implemented
+//            search.deptFilter.setInput(req.dept);
+            search.timeFilter.setInput(req.time);
+            search.credFilter.setInput(req.credits);
 
-            // Get filtered result
+            // TODO: (sprint 2) make it more secure by switching search filters to private variables? IDK
+
+            // Send filtered results back
+            // NOTE: We don't have to worry about updating the frontend, since it's state will save (hopefully)
             ArrayList<Course> results = search.getFilteredResults();
             ctx.json(results);
         });
