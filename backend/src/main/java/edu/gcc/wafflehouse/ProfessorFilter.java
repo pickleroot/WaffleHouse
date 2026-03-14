@@ -1,14 +1,13 @@
 package edu.gcc.wafflehouse;
 
-import java.util.ArrayList;
-
 public class ProfessorFilter extends Filter {
 
-    public ProfessorFilter(Filter.FilterName filterName) {
-        super(filterName);
+    public ProfessorFilter(String prof) {
+        super(prof);
     }
 
-    public ArrayList<Course> apply(FilterName filter, ArrayList<Course> courses) {
-        return null;
+    @Override
+    public boolean apply(Course course) {
+        return true;
     }
 }
