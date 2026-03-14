@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 public class Course {
     private static long nextId;
 
-    private DateTimeFormatter format = DateTimeFormatter.ofPattern("hh:mm a");
+    private static final DateTimeFormatter format = DateTimeFormatter.ofPattern("hh:mm a");
     private String name;
     private int code;
     private String department;
