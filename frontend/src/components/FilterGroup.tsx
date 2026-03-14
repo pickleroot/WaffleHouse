@@ -35,23 +35,25 @@ const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as c
 
 export default function FilterGroup({className}: React.ComponentProps<"div">) {
     const weekAnchor = useComboboxAnchor()
-    const profAnchor = useComboboxAnchor()
+//     const profAnchor = useComboboxAnchor()
 
     return (
         <FieldGroup className={cn("grid grid-cols-7", className)}>
         {/* Only show open courses */}
-        <Field>
+        {/* <Field>
             <FieldLabel htmlFor="hide-full">Hide full courses</FieldLabel>
             <Toggle id="hide-full" variant="outline" aria-label="Toggle for hiding full courses" size="default">
                 Hide
             </Toggle>
-        </Field>
+        </Field> */}
+
+        {/* TODO: Semester */}
 
         {/* Department: Single select */}
         <Field>
             <FieldLabel htmlFor="department">Department</FieldLabel>
             <Combobox items={departments}>
-                <ComboboxInput id="department" placeholder="Department" showClear />
+                <ComboboxInput id="department" name="dept" placeholder="Department" showClear />
                 <ComboboxContent>
                     <ComboboxEmpty>No department found.</ComboboxEmpty>
                     <ComboboxList>
@@ -68,14 +70,14 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
         {/* Course name: Text input */}
         <Field>
             <FieldLabel htmlFor="course-name">Course name</FieldLabel>
-            <Input id="course-name" placeholder="Course name" />
+            <Input id="course-name" name="name" placeholder="Course name" />
         </Field>
 
 
         {/* Number of credits: Number input */}
         <Field>
             <FieldLabel htmlFor="credit">Number of credits</FieldLabel>
-            <Input id="credit" name="credit-hours" type="number" />
+            <Input id="credit" name="credits" type="number" />
              {/*<RangeInput id="credit" name="credit-hours"
 //                 minPlaceholder="Min" maxPlaceholder="Max"
 //                 type="number" min="1" max="4" step="1"
@@ -98,7 +100,7 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
                                 {values.map((value: string) => (
                                     <ComboboxChip key={value}>{value}</ComboboxChip>
                                 ))}
-                                <ComboboxChipsInput id="days-of-week" placeholder="Select day(s)..."/>
+                                <ComboboxChipsInput id="days-of-week" name="day" placeholder="Select day(s)..."/>
                             </React.Fragment>
                         )}
                     </ComboboxValue>
@@ -131,7 +133,19 @@ export default function FilterGroup({className}: React.ComponentProps<"div">) {
         {/* Professor: Multiselect */}
         <Field>
             <FieldLabel htmlFor="professor">Professor</FieldLabel>
-            <Select id="professor" name="professor" placeholder="Select prof..." />
+            <Combobox items={professors}>
+                <ComboboxInput id="professor" name="prof" placeholder="Professor" showClear />
+                <ComboboxContent>
+                    <ComboboxEmpty>No professor found.</ComboboxEmpty>
+                    <ComboboxList>
+                        {(item) => (
+                            <ComboboxItem key={item} value={item}>
+                                {item}
+                            </ComboboxItem>
+                        )}
+                    </ComboboxList>
+                </ComboboxContent>
+            </Combobox>
 
             {/*<Combobox
                 multiple
