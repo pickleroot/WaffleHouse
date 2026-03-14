@@ -27,10 +27,46 @@ public class Search {
     public ArrayList<Course> search(String query) {
         ArrayList<Course> results = new ArrayList<>();
 
-        // TODO: search through each field of each course in the db and try to match query and save results to this.results
-        // This might look like, hardcoding a str.contains for every field of a course
-        // This should return all the results that matches from at least one (NOT all) of the filters
-        // I.e., this is a OR, not AND gate, as opposed to getFilteredResults
+        if (query == null) {
+            this.results = results;
+            return results;
+        }
+
+        String q = query.toLowerCase();
+
+        for (Course c : courses) {
+
+            boolean match = false;
+
+            if (c.getName().toLowerCase().contains(q)) {
+                match = true;
+            }
+
+            if (c.getDepartment().toLowerCase().contains(q)) {
+                match = true;
+            }
+
+            if (String.valueOf(c.getCode()).toLowerCase().contains(q)) {
+                match = true;
+            }
+
+            String fullCode = (c.getDepartment() + " " + c.getCode()).toLowerCase();
+
+            if (fullCode.contains(q)) {
+                match = true;
+            }
+
+            if (c.getProf() != null &&
+                    c.getProf().toString().toLowerCase().contains(q)) {
+                match = true;
+            }
+
+            // open next semester NOT IMPLEMENTED YET
+
+            if (match) {
+                results.add(c);
+            }
+        }
 
         this.results = results;
         return results;
@@ -127,4 +163,5 @@ public class Search {
                 histTimes
         );
 
-    }}
+    }
+}
