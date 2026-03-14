@@ -24,6 +24,7 @@ public class Driver {
             if (query == null || query.isEmpty()) {
                 ctx.status(400); // Bad Request
                 ctx.result("Missing 'query' parameter");
+                return;
             }
 
             ArrayList<Course> results = search.search(query);  // Search
