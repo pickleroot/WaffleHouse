@@ -1,23 +1,21 @@
 package edu.gcc.wafflehouse;
 
-import java.util.ArrayList;
 
 /**
+ * Filter based on specific credit hour, e.g., 1, 2, 3, 4
  * @author Ina Tang
  */
-public class CreditHourFilter extends Filter<Integer> {
+public class CreditHourFilter extends Filter {
+
+    public CreditHourFilter(Object credit) {
+        super(credit);
+    }
 
     /**
      * Returns the courses with the given number of credit hours
      */
     @Override
-    public ArrayList<Course> apply(ArrayList<Course> courses, Integer pattern) {
-        ArrayList<Course> matchingCourses = new ArrayList<>();
-        for (Course course : courses) {
-            if (course.getCreditHours() == pattern) {
-                matchingCourses.add(course);
-            }
-        }
-        return matchingCourses;
+    protected boolean apply(Course course) {
+        return course.getCreditHours() == (int) getInput();
     }
 }
