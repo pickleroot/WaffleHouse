@@ -1,7 +1,9 @@
 package edu.gcc.wafflehouse;
 
 import java.util.ArrayList;
+import java.io.File;
 import java.io.FileWriter;
+import java.util.Scanner;
 import java.io.IOException;
 
 /**
@@ -39,6 +41,21 @@ public class Schedule {
             for (Course c : courses) {
                 quill.write(c.getId() + "\n");
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadSchedule() {
+        File scheduleFile = new File("../../resources/schedule.csv");
+        try (Scanner papyrus = new Scanner(scheduleFile)) {
+            if (papyrus.hasNextLine()) {
+                papyrus.nextLine(); // reads header of CSV file
+                while (papyrus.hasNextLine()) {
+                    addCourse(/*make a course from the course code*/);
+                }
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
