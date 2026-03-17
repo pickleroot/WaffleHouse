@@ -62,6 +62,9 @@ public class Driver {
         // Get schedule
         app.get("/schedule", ctx -> ctx.json(schedule));
 
+        // Get all courses in user's schedule
+        app.get("/schedule/courses", ctx -> ctx.json(schedule.getCourses()));
+
         // Get course (for viewing course info)
         app.get("/course", ctx -> {
             String courseID = ctx.queryParam("id");

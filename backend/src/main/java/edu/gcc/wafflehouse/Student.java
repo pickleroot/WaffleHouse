@@ -1,7 +1,5 @@
 package edu.gcc.wafflehouse;
 
-import java.util.ArrayList;
-
 /**
  * @author Ina Tang
  */
@@ -14,6 +12,9 @@ public class Student extends Profile {
     private Schedule schedule;
 
     public Schedule getSchedule() {
+        if (schedule == null) {
+            schedule = new Schedule();
+        }
         return schedule;
     }
 

@@ -22,7 +22,7 @@ public class Schedule {
 
     // Methods
     public ArrayList<Course> getCourses() {
-        return courses;
+        return new ArrayList<>(courses);
     }
 
     public void addCourse(Course c) {
