@@ -4,24 +4,38 @@ import java.time.LocalTime;
 
 public class Timeslot {
     private char day;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private LocalTime start_time;
+    private LocalTime end_time;
 
-    public Timeslot(char day, LocalTime startTime, LocalTime endTime) {
+
+    public Timeslot() {}
+    public Timeslot(char day, LocalTime start_time, LocalTime end_time) {
         this.day = day;
-        this.startTime = startTime;
-        this.endTime = endTime;
+        this.start_time = start_time;
+        this.end_time = end_time;
+    }
+
+    public void setDay(char day) {
+        this.day = day;
+    }
+
+    public void setend_time(LocalTime end_time) {
+        this.end_time = end_time;
+    }
+
+    public void setstart_time(LocalTime start_time) {
+        this.start_time = start_time;
     }
 
     public char getDay() {
         return day;
     }
 
-    public LocalTime getStartTime() {
-        return startTime;
+    public LocalTime getstart_time() {
+        return start_time;
     }
 
-    public LocalTime getEndTime() {
-        return endTime;
+    public LocalTime getend_time() {
+        return end_time;
     }
 }

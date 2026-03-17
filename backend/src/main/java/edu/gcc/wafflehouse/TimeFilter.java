@@ -28,10 +28,10 @@ public class TimeFilter extends Filter {
             // If the course has a slot on one of the desired day of the week
             if (ts.getDay() == thisTs.getDay()) {
                 // If that slot is in between the desired start and end time
-                LocalTime desiredStart = thisTs.getStartTime();
-                LocalTime desiredEnd = thisTs.getEndTime();
-                if (!ts.getStartTime().isAfter(desiredStart) &&
-                        !ts.getEndTime().isBefore(desiredEnd)) {
+                LocalTime desiredStart = thisTs.getstart_time();
+                LocalTime desiredEnd = thisTs.getend_time();
+                if (!ts.getstart_time().isAfter(desiredStart) &&
+                        !ts.getend_time().isBefore(desiredEnd)) {
                     return true;
                 }
             }

@@ -33,11 +33,12 @@ public class Search {
         this.credFilter = new CreditHourFilter(null);
 
         // Populate with test data
-        AddTestCourses();
+        // AddTestCourses();
     }
 
     /**
      * Search the database for matching courses
+     *
      * @param query user input
      * @return courses with at least one field matching the entire query
      */
@@ -73,8 +74,8 @@ public class Search {
                 match = true;
             }
 
-            if (c.getProf() != null &&
-                    c.getProf().toString().toLowerCase().contains(q)) {
+            if (c.getFaculty() != null &&
+                    c.getFaculty().toString().toLowerCase().contains(q)) {
                 match = true;
             }
 
@@ -92,6 +93,7 @@ public class Search {
 
     /**
      * Apply the filters one-by-one, using a predicate approach
+     *
      * @return filtered results
      */
     public ArrayList<Course> getFilteredResults() {
@@ -105,9 +107,14 @@ public class Search {
                 .collect(Collectors.toList());
     }
 
+    public void setCourses(ArrayList<Course> courses ) {
+        this.courses = courses;
+    }
+
 
     /**
      * Mostly for testing
+     *
      * @return
      */
     public ArrayList<Course> getResults() {
@@ -116,13 +123,14 @@ public class Search {
 
     /**
      * Mostly for testing
+     *
      * @return
      */
     public ArrayList<Course> getCourses() {
         return courses;
     }
 
-    public Course getCourseByID (int courseID) {
+    public Course getCourseByID(int courseID) {
 
         // TODO: make the course search algorithm more efficient.
         for (Course c : courses) {
@@ -133,7 +141,8 @@ public class Search {
         return null;
     }
 
-    public void AddTestCourses() {
+    /*
+    * public void AddTestCourses() {
         ArrayList<Timeslot> csTimes = new ArrayList<>();
         csTimes.add(new Timeslot('M', LocalTime.of(9, 0), LocalTime.of(10, 15)));
         csTimes.add(new Timeslot('W', LocalTime.of(9, 0), LocalTime.of(10, 15)));
@@ -185,4 +194,7 @@ public class Search {
         courses.add(hist150);
 
     }
+    * */
+
+
 }

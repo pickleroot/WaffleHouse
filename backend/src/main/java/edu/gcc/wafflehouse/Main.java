@@ -4,6 +4,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 
+import java.io.IOException;
+
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -13,7 +15,15 @@ import io.javalin.json.JavalinJackson;
  * @author Ina Tang
  */
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+
+
+        System.out.println(System.getProperty("user.dir"));
+        Deserialize ds = new Deserialize();
+        Search search = new Search();
+        search.setCourses(ds.getCourses());
+
+
         Javalin app = Javalin.create(config -> {
             // Enable CORS (allow requests from React dev server)
             config.bundledPlugins.enableCors(cors -> {

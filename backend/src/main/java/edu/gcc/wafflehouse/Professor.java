@@ -13,4 +13,8 @@ public class Professor extends Profile {
             setFirstName(name);
         }
     }
+
+    public String toString() {
+        return getFirstName() + " " + getLastName();
+    }
 }
