@@ -23,12 +23,12 @@ public class Course {
     private static final DateTimeFormatter format = DateTimeFormatter.ofPattern("hh:mm a");
     private String name;
     private int code;
+    private char section;
     private String department;
     private ArrayList<Professor> faculty;
     private int creditHours;
     private int capacity;
-    private int year;
-    private String semester;
+    private String semester; // e.g. "2026_fall"
     private long id;
     private boolean isLab;
     private boolean isOpen;
@@ -37,13 +37,13 @@ public class Course {
     private ArrayList<Timeslot> times;
     private int currentEnrollment;
 
-    public Course(String name, int code, String department, ArrayList<String> faculty, int creditHours, int capacity, int year, String semester, ArrayList<Timeslot> times) {
+    public Course(String name, int code, char section, String department, ArrayList<String> faculty, int creditHours, int capacity, String semester, ArrayList<Timeslot> times) {
         this.name = name;
         this.code = code;
+        this.section = section;
         this.department = department;
         this.creditHours = creditHours;
         this.capacity = capacity;
-        this.year = year;
         this.semester = semester;
         this.times = times;
         this.currentEnrollment = 0;
@@ -70,6 +70,10 @@ public class Course {
         return code;
     }
 
+    public char getSection() {
+        return section;
+    }
+
     public String getDepartment() {
         return department;
     }
@@ -84,10 +88,6 @@ public class Course {
 
     public int getCapacity() {
         return capacity;
-    }
-
-    public int getYear() {
-        return year;
     }
 
     public String getSemester() {

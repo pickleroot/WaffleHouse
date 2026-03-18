@@ -35,11 +35,11 @@ public class Deserialize {
                 Course c = new Course(
                         course.getName(),
                         course.getNumber(),
+                        course.getSection(),
                         course.getSubject(),
                         course.getFaculty(),
                         course.getCredits(),
                         course.getTotal_seats(),
-                        2026,
                         course.getSemester().substring(5),
                         course.getTimes()
                 );

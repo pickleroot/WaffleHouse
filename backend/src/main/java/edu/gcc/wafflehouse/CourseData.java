@@ -15,7 +15,7 @@ public class CourseData {
     private String name;
     private int number;
     private int open_seats;
-    private String section;
+    private char section;
     private String semester;
     private String subject;
     private ArrayList<Timeslot> times;
@@ -88,11 +88,11 @@ public class CourseData {
         this.open_seats = open_seats;
     }
 
-    public String getSection() {
+    public char getSection() {
         return section;
     }
 
-    public void setSection(String section) {
+    public void setSection(char section) {
         this.section = section;
     }
 
