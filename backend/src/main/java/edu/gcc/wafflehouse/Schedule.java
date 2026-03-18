@@ -14,6 +14,7 @@ public class Schedule {
     private ArrayList<Course> courses;
 
     // Constructors
+    // Do we need to make a new ArrayList?
     public Schedule() {
         this.courses = new ArrayList<Course>();
     }
