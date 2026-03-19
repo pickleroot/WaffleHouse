@@ -20,11 +20,11 @@ public class Timeslot {
         this.day = day;
     }
 
-    public void setend_time(LocalTime end_time) {
+    public void setEnd_time(LocalTime end_time) {
         this.end_time = end_time;
     }
 
-    public void setstart_time(LocalTime start_time) {
+    public void setStart_time(LocalTime start_time) {
         this.start_time = start_time;
     }
 
@@ -42,6 +42,5 @@ public class Timeslot {
 
     public String toString() {
         return day + " " + start_time.toString() + " " + end_time.toString();
-
     }
 }

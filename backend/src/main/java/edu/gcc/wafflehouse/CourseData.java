@@ -1,5 +1,6 @@
 package edu.gcc.wafflehouse;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalTime;
 import java.sql.Time;
@@ -8,17 +9,17 @@ import java.util.ArrayList;
 
 public class CourseData {
     private int credits;
-    private ArrayList<String> faculty;
+    private ArrayList<String> faculty; // professors teaching this specific section, NOT all professors teaching the class
     private boolean is_lab;
     private boolean is_open;
     private String location;
     private String name;
-    private int number;
+    private int code; // The number after the subject: COMP {141}, PSYC {201}, etc.
     private int open_seats;
-    private char section;
+    private char section; // COMP 141 {A}, STAT 331 {B}, etc.
     private String semester;  // e.g. "2024_Fall", "2023_Winter_Online"
-    private String subject;
-    private ArrayList<Timeslot> times;
+    private String subject; // {COMP}, {MATH}, {PSYC}, etc.
+    private ArrayList<Timeslot> times; //
     private int total_seats;
 
     public CourseData() {}
@@ -72,12 +73,13 @@ public class CourseData {
         this.name = name;
     }
 
-    public int getNumber() {
-        return number;
+    public int getCode() {
+        return code;
     }
 
-    public void setNumber(int number) {
-        this.number = number;
+    @JsonProperty("number")
+    public void setCode(int code) {
+        this.code = code;
     }
 
     public int getOpen_seats() {
@@ -128,6 +130,12 @@ public class CourseData {
         this.total_seats = total_seats;
     }
 
+    public int getYearFromSemester() {
+        return Integer.parseInt(semester.split("_")[0]);
+    }
 
+    public String getSemesterFromSemester() {
+        return semester.replaceFirst("\\d*_", "");
+    }
 
 }

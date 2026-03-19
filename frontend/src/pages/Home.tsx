@@ -37,7 +37,7 @@ function toEvents(courses: any[]): CourseEvent[] {
             endTime: Array.isArray(slot.end_time) ? formatTime(slot.end_time) : String(slot.end_time),
             courseName: course.name,
             courseCode: String(course.code),
-            courseDepartment: course.department,
+            courseDepartment: course.subject,
             courseSection: typeof course.section === 'string' ? course.section : String.fromCharCode(course.section),
             courseLocation: course.location || '',
         }))
@@ -81,12 +81,12 @@ export default function Home() {
 
     // Columns / headers for table of search results
     const columns: ColumnDef<Course>[] = [
-        { accessorKey: "department", header: "Dept" },
+        { accessorKey: "subject", header: "Dept" },
         { accessorKey: "code", header: "Code" },
         { accessorKey: "section", header: "Section" },
         { accessorKey: "name", header: "Course name", cell: ({ row }) => (
             <button
-                onClick={() => navigate(`/course/${(row.original as any).id ?? row.original.id}`)}
+                onClick={() => navigate(`/course/${row.original.id}`)}
                 className="text-left hover:underline cursor-pointer text-foreground"
             >
                 {row.original.name}
@@ -97,18 +97,18 @@ export default function Home() {
             id: "professor",
             header: "Professor",
             cell: ({ row }) => {
-                const faculty = (row.original as any).faculty;
-                if (!Array.isArray(faculty)) return null;
-                return faculty.map((p: any) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
+                const professors = row.original.professors;
+                if (!Array.isArray(professors)) return null;
+                return professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
             },
         },
         {
             id: "time",
             header: "Days & Time",
             cell: ({ row }) => {
-                const times = (row.original as any).times;
+                const times = row.original.times;
                 if (!Array.isArray(times)) return null;
-                return times.map((t: any) => {
+                return times.map((t) => {
                     const day = String(t.day);
                     const start = Array.isArray(t.start_time) ? formatTime(t.start_time) : String(t.start_time);
                     const end = Array.isArray(t.end_time) ? formatTime(t.end_time) : String(t.end_time);
@@ -116,7 +116,6 @@ export default function Home() {
                 }).join(", ");
             },
         },
-    //     { accessorKey: "capacity", header: "Capacity" },
         {
             id: "add",
             header: "",
@@ -154,7 +153,7 @@ export default function Home() {
 
     // Columns for the schedule table (shown below calendar)
     const scheduleColumns: ColumnDef<any>[] = [
-        { accessorKey: "department", header: "Dept" },
+        { accessorKey: "subject", header: "Dept" },
         { accessorKey: "code", header: "Code" },
         { accessorKey: "section", header: "Section" },
         { accessorKey: "name", header: "Course name" },
@@ -162,9 +161,9 @@ export default function Home() {
             id: "professor",
             header: "Professor",
             cell: ({ row }) => {
-                const faculty = row.original.faculty;
-                if (!Array.isArray(faculty)) return null;
-                return faculty.map((p: any) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
+                const professors = row.original.professors;
+                if (!Array.isArray(professors)) return null;
+                return professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
             },
         },
         {
@@ -173,7 +172,7 @@ export default function Home() {
             cell: ({ row }) => {
                 const times = row.original.times;
                 if (!Array.isArray(times)) return null;
-                return times.map((t: any) => {
+                return times.map((t) => {
                     const day = String(t.day);
                     const start = Array.isArray(t.start_time) ? formatTime(t.start_time) : String(t.start_time);
                     const end = Array.isArray(t.end_time) ? formatTime(t.end_time) : String(t.end_time);

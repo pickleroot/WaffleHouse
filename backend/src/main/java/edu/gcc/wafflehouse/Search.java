@@ -59,7 +59,7 @@ public class Search {
                 match = true;
             }
 
-            if (c.getDepartment().toLowerCase().contains(q)) {
+            if (c.getSubject().toLowerCase().contains(q)) {
                 match = true;
             }
 
@@ -67,14 +67,14 @@ public class Search {
                 match = true;
             }
 
-            String fullCode = (c.getDepartment() + " " + c.getCode()).toLowerCase();
+            String fullCode = (c.getSubject() + " " + c.getCode()).toLowerCase();
 
             if (fullCode.contains(q)) {
                 match = true;
             }
 
-            if (c.getFaculty() != null &&
-                    c.getFaculty().toString().toLowerCase().contains(q)) {
+            if (c.getProfessors() != null &&
+                    c.getProfessors().toString().toLowerCase().contains(q)) {
                 match = true;
             }
 
@@ -97,11 +97,8 @@ public class Search {
     }
 
     public Course searchByID(String query) {
-
         long id;
-
         try {
-            Long.parseLong(query);
             id = Long.parseLong(query);
             for (Course c : courses) {
                 if (c.getID() == id) {

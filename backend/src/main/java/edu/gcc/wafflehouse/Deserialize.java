@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class Deserialize {
@@ -16,46 +16,54 @@ public class Deserialize {
     public Deserialize() throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule()); // this line must be present
+        mapper.registerModule(new JavaTimeModule());
 
-        File file = new File("backend/src/main/resources/courses.json");
-
+        InputStream is = getClass().getClassLoader().getResourceAsStream("courses.json");
+        if (is == null) {
+            throw new IOException("Unable to find courses.json in classpath");
+        }
 
         try {
             ArrayList<CourseData> coursesIn = mapper.readValue(
-                    file,
+                    is,
                     new TypeReference<ArrayList<CourseData>>() {}
             );
 
             // System.out.println("Loaded courses: " + courses.size());
 
             courses = new ArrayList<>();
-            for ( CourseData course : coursesIn) {
-
+            long id = 1;
+            for (CourseData course : coursesIn) {
                 Course c = new Course(
-                        course.getName(),
-                        course.getNumber(),
-                        course.getSection(),
+                        id,
                         course.getSubject(),
-                        course.getFaculty(),
+                        course.getCode(),
+                        course.getSection(),
+                        course.getName(),
+                        Professor.convertProfessors(course.getFaculty()),
                         course.getCredits(),
+                        course.getOpen_seats(),
                         course.getTotal_seats(),
-                        course.getSemester(),
-                        course.getTimes()
+                        course.getYearFromSemester(),
+                        course.getSemesterFromSemester(),
+                        course.getTimes(),
+                        course.getis_lab(),
+                        course.getis_open(),
+                        course.getLocation()
                 );
-
                 courses.add(c);
+                id++;
             }
 
-            /*
+
             for (int i = 0; i < 7; i++) {
                 System.out.println(courses.get(i).getSemester());
-                System.out.println(courses.get(i).getDepartment());
+                System.out.println(courses.get(i).getSubject());
                 System.out.println(courses.get(i).getCode());
-                System.out.println(courses.get(i).getCapacity());
-                System.out.println(courses.get(i).getFaculty().get(0).toString());
+                System.out.println(courses.get(i).getTotalSeats());
+                System.out.println(courses.get(i).getProfessors().get(0).toString());
             }
-             */
+
 
         } catch (Exception e) {
             e.printStackTrace();

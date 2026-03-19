@@ -12,11 +12,11 @@ public class DepartmentFilter extends Filter {
     /**
      * Filter by containment
      * TODO: make department an ENUM based on loaded data and implement as selection instead of input in frontend
-     * @param course
+     * @param course the Course to filter
      * @return true if input is a substr of dept
      */
     @Override
     protected boolean apply(Course course) {
-        return course.getDepartment().contains(String.valueOf(getInput()));
+        return course.getSubject().contains(String.valueOf(getInput()));
     }
 }

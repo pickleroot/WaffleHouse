@@ -20,7 +20,7 @@ public class ProfessorFilter extends Filter {
     @Override
     public boolean apply(Course course) {
         String search = ((String) getInput()).toLowerCase();
-        ArrayList<Professor> faculty = course.getFaculty();
+        ArrayList<Professor> faculty = course.getProfessors();
         if (faculty == null) return false;
         for (Professor prof : faculty) {
             String fullName = prof.toString().toLowerCase();

@@ -1,131 +1,98 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Footer from "@/components/Footer.tsx"
 import { cn } from "@/lib/utils"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap } from "lucide-react"
-
-interface Professor {
-    firstName: string
-    lastName: string
-}
-
-interface Timeslot {
-    day: string
-    start_time: string
-    end_time: string
-}
+import type { Professor, Timeslot } from "@/lib/types"
 
 interface BackendCourse {
     id: number
-    name: string
+    subject: string
     code: number
-    department: string
-    faculty: Professor[]
+    section: string
+    name: string
+    professors: Professor[]
     creditHours: number
-    capacity: number
+    openSeats: number
+    totalSeats: number
+    year: number
     semester: string
     times: Timeslot[]
-    currentEnrollment: number
+    isLab: boolean
     isOpen: boolean
     location: string
 }
 
 interface DisplayCourse {
     id: number
-    name: string
+    subject: string
     code: number
-    department: string
-    professor: string
+    section: string
+    name: string
+    professors: Professor[]
     creditHours: number
+    openSeats: number
+    totalSeats: number
+    year: number
     semester: string
-    capacity: number
-    currentEnrollment: number
+    times: Timeslot[]
+    isLab: boolean
     isOpen: boolean
     location: string
-    times: Timeslot[]
-    faculty: Professor[]
-}
-
-const SAMPLE_COURSE: DisplayCourse = {
-    id: 1,
-    name: "Principles of Accounting",
-    code: 201,
-    department: "ACCT",
-    professor: "Dr. Smith",
-    creditHours: 3,
-    semester: "2026 Spring",
-    capacity: 30,
-    currentEnrollment: 24,
-    isOpen: true,
-    location: "Business Building 101",
-    times: [
-        { day: "M", start_time: "09:00", end_time: "10:15" },
-        { day: "W", start_time: "09:00", end_time: "10:15" },
-    ],
-    faculty: [{ firstName: "Dr. Smith", lastName: "" }],
-}
-
-function formatDay(day: string): string {
-    const dayMap: Record<string, string> = {
-        "M": "Monday",
-        "T": "Tuesday",
-        "W": "Wednesday",
-        "R": "Thursday",
-        "F": "Friday",
-        "S": "Saturday",
-        "U": "Sunday",
-    }
-    return dayMap[day.toUpperCase()] || day
-}
-
-function formatTime(time: string): string {
-    if (!time) return ""
-    if (time.includes("AM") || time.includes("PM")) return time
-    try {
-        const [hours, minutes] = time.split(":")
-        const h = parseInt(hours, 10)
-        const ampm = h >= 12 ? "PM" : "AM"
-        const h12 = h % 12 || 12
-        return `${h12}:${minutes} ${ampm}`
-    } catch {
-        return time
-    }
-}
-
-function formatSemester(semester: string): string {
-    if (!semester) return ""
-    const parts = semester.split("_")
-    if (parts.length === 2) {
-        const year = parts[0]
-        const term = parts[1].charAt(0).toUpperCase() + parts[1].slice(1)
-        return `${year} ${term}`
-    }
-    return semester
 }
 
 function transformCourse(data: BackendCourse): DisplayCourse {
-    const primaryProfessor = data.faculty && data.faculty.length > 0
-        ? `${data.faculty[0].firstName} ${data.faculty[0].lastName}`.trim()
-        : "TBD"
-
     return {
         id: data.id,
-        name: data.name,
+        subject: data.subject,
         code: data.code,
-        department: data.department,
-        professor: primaryProfessor,
+        section: data.section,
+        name: data.name,
+        professors: data.professors,
         creditHours: data.creditHours,
-        semester: formatSemester(data.semester),
-        capacity: data.capacity,
-        currentEnrollment: data.currentEnrollment,
+        openSeats: data.openSeats,
+        totalSeats: data.totalSeats,
+        year: data.year,
+        semester: data.semester,
+        times: data.times,
+        isLab: data.isLab,
         isOpen: data.isOpen,
-        location: data.location || "TBD",
-        times: data.times || [],
-        faculty: data.faculty || [],
+        location: data.location,
     }
+}
+
+function formatDay(day: string): string {
+    const days: Record<string, string> = {
+        "M": "Monday",
+        "T": "Tuesday",
+        "W": "Wednesday",
+        "TH": "Thursday",
+        "F": "Friday",
+        "SA": "Saturday",
+        "SU": "Sunday"
+    }
+    return days[day] || day
+}
+
+function formatTime(time: string | number[]): string {
+    let hours: number, minutes: number
+    if (Array.isArray(time)) {
+        [hours = 0, minutes = 0] = time
+    } else {
+        [hours, minutes] = time.split(":").map(Number)
+    }
+    const period = hours >= 12 ? "PM" : "AM"
+    const displayHours = hours % 12 || 12
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
+}
+
+function formatProfessorName(prof: Professor): string {
+    if (prof.firstName && prof.lastName) {
+        return `${prof.firstName} ${prof.lastName}`
+    }
+    return prof.firstName || prof.lastName || "Unknown Professor"
 }
 
 export default function Course() {
@@ -154,7 +121,7 @@ export default function Course() {
                 setCourse(displayCourse)
             } catch (err) {
                 console.error("Error fetching course:", err)
-                setCourse(SAMPLE_COURSE)
+                setError("Failed to load course details")
             } finally {
                 setLoading(false)
             }
@@ -197,6 +164,11 @@ export default function Course() {
         )
     }
 
+    const closedSeats = course.totalSeats - course.openSeats
+    const seatPercentage = course.totalSeats > 0 
+        ? Math.round((closedSeats / course.totalSeats) * 100) 
+        : 0
+
     return (
         <div className="min-h-screen flex flex-col bg-background">
             <header className="relative h-16 flex items-center px-6">
@@ -219,10 +191,17 @@ export default function Course() {
                     <Card>
                         <CardHeader>
                             <div className="flex items-start justify-between">
-                                <div>
-                                    <CardTitle className="text-2xl">{course.name || "Untitled Course"}</CardTitle>
-                                    <CardDescription className="text-lg mt-1">
-                                        {course.department} {course.code}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-2xl">{course.name || "Untitled Course"}</CardTitle>
+                                        {course.isLab && (
+                                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 rounded">
+                                                Lab
+                                            </span>
+                                        )}
+                                    </div>
+                                    <CardDescription className="text-lg">
+                                        {course.subject} {course.code} - Section {course.section}
                                     </CardDescription>
                                 </div>
                                 <div className={cn(
@@ -236,20 +215,31 @@ export default function Course() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <GraduationCap className="h-4 w-4" />
-                                <span>Professor: {course.professor}</span>
-                            </div>
+                            {course.professors && course.professors.length > 0 && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <GraduationCap className="h-4 w-4" />
+                                    <span>
+                                        {course.professors.length === 1 
+                                            ? "Instructor" 
+                                            : "Instructors"
+                                        }: {course.professors.map(formatProfessorName).join(", ")}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <BookOpen className="h-4 w-4" />
-                                <span>{course.creditHours} Credit Hours</span>
+                                <span>{course.creditHours} Credit Hour{course.creditHours !== 1 ? "s" : ""}</span>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <span className="text-sm">Semester: {course.semester}</span>
+                                <Calendar className="h-4 w-4" />
+                                <span>{course.semester} {course.year}</span>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Users className="h-4 w-4" />
-                                <span>{course.currentEnrollment} / {course.capacity} Students</span>
+                                <span>{course.openSeats} / {course.totalSeats} Seats Available</span>
+                                <span className="text-sm text-muted-foreground/70">
+                                    ({seatPercentage}% full)
+                                </span>
                             </div>
                         </CardContent>
                     </Card>
@@ -289,28 +279,6 @@ export default function Course() {
                             </div>
                         </CardContent>
                     </Card>
-
-                    {course.faculty && course.faculty.length > 1 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Instructors</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-2">
-                                    {course.faculty.map((prof, index) => (
-                                        <div key={index} className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarFallback className="text-xs">
-                                                    {prof.firstName.charAt(0)}{prof.lastName ? prof.lastName.charAt(0) : ""}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm">{prof.firstName} {prof.lastName}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
             </main>
 

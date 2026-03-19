@@ -1,5 +1,7 @@
 package edu.gcc.wafflehouse;
 
+import java.util.ArrayList;
+
 public class Professor extends Profile {
 
     // For Jackson deserialization
@@ -15,6 +17,14 @@ public class Professor extends Profile {
         } else {
             setFirstName(name);
         }
+    }
+
+    public static ArrayList<Professor> convertProfessors(ArrayList<String> professorsString) {
+        ArrayList<Professor> professors = new ArrayList<>();
+        for (String professor :  professorsString) {
+            professors.add(new Professor(professor));
+        }
+        return professors;
     }
 
     public String toString() {

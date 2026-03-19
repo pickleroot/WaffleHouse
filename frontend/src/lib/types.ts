@@ -3,16 +3,32 @@
 // Track state of SearchBarCalendar
 export type Mode = "search" | "calendar"
 
+export interface Professor {
+    firstName: string
+    lastName: string
+}
+
+export interface Timeslot {
+    day: string
+    start_time: string
+    end_time: string
+}
+
 // Wrapper for Course class in frontend
 export interface Course {
     id: number
-    name: string
+    subject: string
     code: number
     section: string
-    department: string
-    professor: string
+    name: string
+    professors: Professor[]
     creditHours: number
+    openSeats: number
+    totalSeats: number
     year: number
-    semester: number
-    times: Date[]
-};
+    semester: string
+    times: Timeslot[]
+    isLab: boolean
+    isOpen: boolean
+    location: string
+}
