@@ -13,6 +13,7 @@ public class Search {
     private ArrayList<Course> results;  // results from searching the query; "cache"
 
     // Filters: Hardcoded one-by-one so we have easy access to each type of filter (not all in one list w/o clear order)
+    public SemesterFilter semeFilter;
     public CourseNameFilter nameFilter;
     public ProfessorFilter profFilter;
     public DepartmentFilter deptFilter;
@@ -27,6 +28,7 @@ public class Search {
         this.results = new ArrayList<>();
 
         // Initialize filters with null input (null = no filtering)
+        this.semeFilter = new SemesterFilter(null);
         this.nameFilter = new CourseNameFilter(null);
         this.profFilter = new ProfessorFilter(null);
         this.timeFilter = new TimeFilter(null);
@@ -97,6 +99,7 @@ public class Search {
      */
     public ArrayList<Course> getFilteredResults() {
         return (ArrayList<Course>) results.stream()
+                .filter(course -> semeFilter.matches(course))
                 .filter(course -> nameFilter.matches(course))
                 .filter(course -> profFilter.matches(course))
                 // TODO: uncomment deptFilter once it's implemented
