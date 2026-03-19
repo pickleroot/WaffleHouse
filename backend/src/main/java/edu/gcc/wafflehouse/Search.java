@@ -78,8 +78,11 @@ public class Search {
                 match = true;
             }
 
-            if (c.getID() == Long.parseLong(q)) {
-                match = true;
+            try {
+                if (c.getID() == Long.parseLong(q)) {
+                    match = true;
+                }
+            } catch (NumberFormatException ignored) {
             }
 
             // open next semester NOT IMPLEMENTED YET

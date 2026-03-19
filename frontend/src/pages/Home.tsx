@@ -43,24 +43,6 @@ function toEvents(courses: any[]): CourseEvent[] {
         }))
     );
 }
-// Columns / headers for table of search results
-const columns: ColumnDef<Course>[] = [
-    { accessorKey: "department", header: "Department" },
-    { accessorKey: "code", header: "Course code" },
-    { accessorKey: "name", header: "Course name", cell: ({ row }) => (
-        <button
-            onClick={() => navigate(`/course/${row.original.id}`)}
-            className="text-left hover:underline cursor-pointer text-foreground"
-        >
-            {row.original.name}
-        </button>
-    )},
-    { accessorKey: "section", header: "Section" },
-    { accessorKey: "creditHours", header: "Credit hours" },
-    { accessorKey: "professor", header: "Professor" },
-    { accessorKey: "time", header: "Days & Time" },
-];
-
 // TODO: change this
 const QUOTES = [
     { text: "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding.", author: "Proverbs 9:10" },
@@ -95,7 +77,14 @@ export default function Home() {
         { accessorKey: "department", header: "Dept" },
         { accessorKey: "code", header: "Code" },
         { accessorKey: "section", header: "Section" },
-        { accessorKey: "name", header: "Course name" },
+        { accessorKey: "name", header: "Course name", cell: ({ row }) => (
+            <button
+                onClick={() => navigate(`/course/${(row.original as any).id ?? row.original.id}`)}
+                className="text-left hover:underline cursor-pointer text-foreground"
+            >
+                {row.original.name}
+            </button>
+        )},
         { accessorKey: "creditHours", header: "Credits" },
         {
             id: "professor",
