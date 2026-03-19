@@ -78,6 +78,12 @@ public class Search {
                 match = true;
             }
 
+            if (c.getID() == Long.parseLong(q)) {
+                match = true;
+            }
+
+            // open next semester NOT IMPLEMENTED YET
+
             if (match) {
                 results.add(c);
             }
@@ -85,6 +91,24 @@ public class Search {
 
         this.results = results;
         return results;
+    }
+
+    public Course searchByID(String query) {
+
+        long id;
+
+        try {
+            Long.parseLong(query);
+            id = Long.parseLong(query);
+            for (Course c : courses) {
+                if (c.getID() == id) {
+                    return c;
+                }
+            }
+            return null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

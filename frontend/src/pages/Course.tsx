@@ -7,53 +7,131 @@ import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap } from "lucide-react"
 
-interface Course {
+interface Professor {
+    firstName: string
+    lastName: string
+}
+
+interface Timeslot {
+    day: string
+    start_time: string
+    end_time: string
+}
+
+interface BackendCourse {
+    id: number
+    name: string
+    code: number
+    department: string
+    faculty: Professor[]
+    creditHours: number
+    capacity: number
+    semester: string
+    times: Timeslot[]
+    currentEnrollment: number
+    isOpen: boolean
+    location: string
+}
+
+interface DisplayCourse {
     id: number
     name: string
     code: number
     department: string
     professor: string
     creditHours: number
-    year: number
     semester: string
     capacity: number
     currentEnrollment: number
     isOpen: boolean
     location: string
     times: Timeslot[]
-    faculty: string[]
+    faculty: Professor[]
 }
 
-interface Timeslot {
-    day: string
-    startTime: string
-    endTime: string
-}
-
-const SAMPLE_COURSE: Course = {
+const SAMPLE_COURSE: DisplayCourse = {
     id: 1,
     name: "Principles of Accounting",
     code: 201,
     department: "ACCT",
     professor: "Dr. Smith",
     creditHours: 3,
-    year: 2024,
-    semester: "Fall",
+    semester: "2026 Spring",
     capacity: 30,
     currentEnrollment: 24,
     isOpen: true,
     location: "Business Building 101",
     times: [
-        { day: "Monday", startTime: "09:00 AM", endTime: "10:15 AM" },
-        { day: "Wednesday", startTime: "09:00 AM", endTime: "10:15 AM" },
+        { day: "M", start_time: "09:00", end_time: "10:15" },
+        { day: "W", start_time: "09:00", end_time: "10:15" },
     ],
-    faculty: ["Dr. Smith", "Dr. Johnson"],
+    faculty: [{ firstName: "Dr. Smith", lastName: "" }],
+}
+
+function formatDay(day: string): string {
+    const dayMap: Record<string, string> = {
+        "M": "Monday",
+        "T": "Tuesday",
+        "W": "Wednesday",
+        "R": "Thursday",
+        "F": "Friday",
+        "S": "Saturday",
+        "U": "Sunday",
+    }
+    return dayMap[day.toUpperCase()] || day
+}
+
+function formatTime(time: string): string {
+    if (!time) return ""
+    if (time.includes("AM") || time.includes("PM")) return time
+    try {
+        const [hours, minutes] = time.split(":")
+        const h = parseInt(hours, 10)
+        const ampm = h >= 12 ? "PM" : "AM"
+        const h12 = h % 12 || 12
+        return `${h12}:${minutes} ${ampm}`
+    } catch {
+        return time
+    }
+}
+
+function formatSemester(semester: string): string {
+    if (!semester) return ""
+    const parts = semester.split("_")
+    if (parts.length === 2) {
+        const year = parts[0]
+        const term = parts[1].charAt(0).toUpperCase() + parts[1].slice(1)
+        return `${year} ${term}`
+    }
+    return semester
+}
+
+function transformCourse(data: BackendCourse): DisplayCourse {
+    const primaryProfessor = data.faculty && data.faculty.length > 0
+        ? `${data.faculty[0].firstName} ${data.faculty[0].lastName}`.trim()
+        : "TBD"
+
+    return {
+        id: data.id,
+        name: data.name,
+        code: data.code,
+        department: data.department,
+        professor: primaryProfessor,
+        creditHours: data.creditHours,
+        semester: formatSemester(data.semester),
+        capacity: data.capacity,
+        currentEnrollment: data.currentEnrollment,
+        isOpen: data.isOpen,
+        location: data.location || "TBD",
+        times: data.times || [],
+        faculty: data.faculty || [],
+    }
 }
 
 export default function Course() {
     const navigate = useNavigate()
     const params = useParams()
-    const [course, setCourse] = React.useState<Course | null>(null)
+    const [course, setCourse] = React.useState<DisplayCourse | null>(null)
     const [loading, setLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
 
@@ -67,12 +145,13 @@ export default function Course() {
             }
 
             try {
-                const res = await fetch(`http://localhost:7001/course?id=${courseId}`)
+                const res = await fetch(`http://localhost:7001/course/${courseId}`)
                 if (!res.ok) {
                     throw new Error(`Failed to fetch course: ${res.status} ${res.statusText}`)
                 }
-                const data: Course = await res.json()
-                setCourse(data)
+                const data: BackendCourse = await res.json()
+                const displayCourse = transformCourse(data)
+                setCourse(displayCourse)
             } catch (err) {
                 console.error("Error fetching course:", err)
                 setCourse(SAMPLE_COURSE)
@@ -141,7 +220,7 @@ export default function Course() {
                         <CardHeader>
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-2xl">{course.name}</CardTitle>
+                                    <CardTitle className="text-2xl">{course.name || "Untitled Course"}</CardTitle>
                                     <CardDescription className="text-lg mt-1">
                                         {course.department} {course.code}
                                     </CardDescription>
@@ -166,6 +245,9 @@ export default function Course() {
                                 <span>{course.creditHours} Credit Hours</span>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
+                                <span className="text-sm">Semester: {course.semester}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
                                 <Users className="h-4 w-4" />
                                 <span>{course.currentEnrollment} / {course.capacity} Students</span>
                             </div>
@@ -182,11 +264,11 @@ export default function Course() {
                                     <div key={index} className="flex items-center gap-4">
                                         <div className="flex items-center gap-2 min-w-[140px] text-muted-foreground">
                                             <Calendar className="h-4 w-4" />
-                                            <span>{slot.day}</span>
+                                            <span>{formatDay(slot.day)}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4 text-muted-foreground" />
-                                            <span>{slot.startTime} - {slot.endTime}</span>
+                                            <span>{formatTime(slot.start_time)} - {formatTime(slot.end_time)}</span>
                                         </div>
                                     </div>
                                 ))
@@ -219,10 +301,10 @@ export default function Course() {
                                         <div key={index} className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg">
                                             <Avatar className="h-6 w-6">
                                                 <AvatarFallback className="text-xs">
-                                                    {prof.split(" ").map(n => n[0]).join("")}
+                                                    {prof.firstName.charAt(0)}{prof.lastName ? prof.lastName.charAt(0) : ""}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <span className="text-sm">{prof}</span>
+                                            <span className="text-sm">{prof.firstName} {prof.lastName}</span>
                                         </div>
                                     ))}
                                 </div>

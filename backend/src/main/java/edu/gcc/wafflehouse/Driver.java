@@ -64,9 +64,16 @@ public class Driver {
         app.get("/schedule", ctx -> ctx.json(courses));
 
         // Get course (for viewing course info)
-        app.get("/course", ctx -> {
-            String courseID = ctx.queryParam("id");
-            // TODO: Find course with ID, then send it back with ctx.json(course)
+        app.get("/course/{id}", ctx -> {
+            String id = ctx.pathParam("id");
+            // Handle cases where the path parameter is missing or empty
+            if (id == null || id.isEmpty()) {
+                ctx.status(400); // Bad Request
+                ctx.result("Missing 'id' path parameter");
+                return;
+            }
+            Course result = search.searchByID(id);  // Search
+            ctx.json(result);  // return results in JSON
         });
 
         // Add course to schedule

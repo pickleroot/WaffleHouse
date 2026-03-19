@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import * as React from "react";
 import SearchCalendarBar from "@/components/SearchCalendarBar.tsx";
 import FilterGroup from "@/components/FilterGroup.tsx";
+import { useNavigate } from "react-router-dom";
 
 
 // TODO: Update columns to match actual API response fields
@@ -23,12 +24,18 @@ import FilterGroup from "@/components/FilterGroup.tsx";
 const columns: ColumnDef<Course>[] = [
     { accessorKey: "department", header: "Department" },
     { accessorKey: "code", header: "Course code" },
+    { accessorKey: "name", header: "Course name", cell: ({ row }) => (
+        <button
+            onClick={() => navigate(`/course/${row.original.id}`)}
+            className="text-left hover:underline cursor-pointer text-foreground"
+        >
+            {row.original.name}
+        </button>
+    )},
     { accessorKey: "section", header: "Section" },
-    { accessorKey: "name", header: "Course name" },
     { accessorKey: "creditHours", header: "Credit hours" },
     { accessorKey: "professor", header: "Professor" },
     { accessorKey: "time", header: "Days & Time" },
-//     { accessorKey: "capacity", header: "Capacity" },
 ];
 
 // TODO: change this
@@ -44,6 +51,7 @@ const QUOTES = [
 ]
 
 export default function Home() {
+    const navigate = useNavigate()
     const [results, setResults] = useState<Course[]>([])
     const [hasSearched, setHasSearched] = useState(false)
     const [mode, setMode] = useState<Mode>("search")

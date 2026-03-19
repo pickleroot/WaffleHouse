@@ -3,18 +3,9 @@
  */
 
 package edu.gcc.wafflehouse;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.io.FileReader;
-import java.lang.reflect.Type;
-import java.time.DateTimeException;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class Course {
@@ -102,7 +93,7 @@ public class Course {
         return currentEnrollment;
     }
 
-    public long getId() {
+    public long getID() {
         return id;
     }
 
