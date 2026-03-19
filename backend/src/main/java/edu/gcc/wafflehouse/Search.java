@@ -1,12 +1,11 @@
 package edu.gcc.wafflehouse;
 
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 /**
  * Fake database, search function, cached search results, filter functions
- * @author TODO
+ * @author Ina Tang
  */
 public class Search {
     private ArrayList<Course> courses;  // temporary db
@@ -29,18 +28,16 @@ public class Search {
         // Initialize filters with null input (null = no filtering)
         this.nameFilter = new CourseNameFilter(null);
         this.profFilter = new ProfessorFilter(null);
+        this.deptFilter = new DepartmentFilter(null);
         this.timeFilter = new TimeFilter(null);
         this.credFilter = new CreditHourFilter(null);
-
-        // Populate with test data
-        // AddTestCourses();
     }
 
     /**
      * Search the database for matching courses
      *
      * @param query user input
-     * @return courses with at least one field matching the entire query
+     * @return courses with at least one field from name, code, dept, or faculty containing query as a substr
      */
     public ArrayList<Course> search(String query) {
         ArrayList<Course> results = new ArrayList<>();
@@ -79,8 +76,6 @@ public class Search {
                 match = true;
             }
 
-            // open next semester NOT IMPLEMENTED YET
-
             if (match) {
                 results.add(c);
             }
@@ -99,8 +94,7 @@ public class Search {
         return (ArrayList<Course>) results.stream()
                 .filter(course -> nameFilter.matches(course))
                 .filter(course -> profFilter.matches(course))
-                // TODO: uncomment deptFilter once it's implemented
-//                    .filter(course -> deptFilter.matches(course))
+                .filter(course -> deptFilter.matches(course))
                 .filter(course -> timeFilter.matches(course))
                 .filter(course -> credFilter.matches(course))
                 .collect(Collectors.toList());
