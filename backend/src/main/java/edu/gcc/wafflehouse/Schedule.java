@@ -34,14 +34,19 @@ public class Schedule {
     public void removeCourse(Course c) {
         courses.remove(c);
     }
-  
+
+    // This should work.
     public void saveSchedule() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(new File("../../resources/schedule.csv"), courses);
+        mapper.writeValue(new File("../../resources/schedule.csv"), Schedule.class);
     }
 
-    public Schedule loadSchedule() throws IOException {
+    // Not great, but it'll get the job done.
+    // It makes a new Schedule object, but then only uses the courses from it. Ideally we would overwrite the
+    // Schedule object calling, or just save the courses and only import that.
+    public void loadSchedule() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(new File("../../resources/schedule.csv"), Schedule.class);
+        Schedule temp = mapper.readValue(new File("../../resources/schedule.csv"), Schedule.class);
+        this.courses = temp.courses;
     }
 }

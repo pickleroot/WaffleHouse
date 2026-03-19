@@ -27,3 +27,5 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+# AI
+AGENTS.md
