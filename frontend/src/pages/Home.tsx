@@ -9,17 +9,12 @@ import { cn } from "@/lib/utils"
 import * as React from "react";
 import FilterGroup from "@/components/FilterGroup.tsx";
 
-// TODO: Replace with actual response type from Java API
-// interface Course {
-//     id: number
-//     name: string
-//     description: string
-// }
 
 interface Course {
     id: number
     name: string
     code: number
+    section: string
     department: string
     professor: string
     creditHours: number
@@ -38,6 +33,7 @@ interface Course {
 const columns: ColumnDef<Course>[] = [
     { accessorKey: "department", header: "Department" },
     { accessorKey: "code", header: "Course code" },
+    { accessorKey: "section", header: "Section" },
     { accessorKey: "name", header: "Course name" },
     { accessorKey: "creditHours", header: "Credit hours" },
     { accessorKey: "professor", header: "Professor" },
@@ -45,25 +41,7 @@ const columns: ColumnDef<Course>[] = [
 //     { accessorKey: "capacity", header: "Capacity" },
 ];
 
-// TODO: Remove sample data once real API is connected
-const SAMPLE_COURSES: Course[] = [
-    { id: 1, name: "Principles of Accounting", description: "ACCT 201 — Fundamentals of financial accounting" },
-    { id: 2, name: "Intermediate Accounting", description: "ACCT 301 — In-depth study of accounting standards" },
-    { id: 3, name: "Data Structures", description: "COMP 242 — Arrays, linked lists, trees, and graphs" },
-    { id: 4, name: "Software Engineering", description: "COMP 350 — Software development lifecycle and methodologies" },
-    { id: 5, name: "Computer Organization", description: "COMP 245 — Hardware architecture and assembly language" },
-    { id: 6, name: "Western Civilization I", description: "HIST 161 — Ancient world through the Reformation" },
-    { id: 7, name: "Western Civilization II", description: "HIST 162 — Reformation through the modern era" },
-    { id: 8, name: "Calculus I", description: "MATH 261 — Limits, derivatives, and integrals" },
-    { id: 9, name: "Calculus II", description: "MATH 262 — Integration techniques and series" },
-    { id: 10, name: "Linear Algebra", description: "MATH 341 — Vector spaces, matrices, and transformations" },
-    { id: 11, name: "General Physics I", description: "PHYS 241 — Mechanics, waves, and thermodynamics" },
-    { id: 12, name: "General Physics II", description: "PHYS 242 — Electricity, magnetism, and optics" },
-    { id: 13, name: "Principles of Economics", description: "ECON 201 — Micro and macroeconomic fundamentals" },
-    { id: 14, name: "British Literature", description: "ENGL 301 — Major works from Beowulf to modern era" },
-    { id: 15, name: "Humanities", description: "HUMA 200 — Integration of faith, reason, and culture" },
-]
-
+// TODO: change this
 const QUOTES = [
     { text: "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding.", author: "Proverbs 9:10" },
     { text: "Education is simply the soul of a society as it passes from one generation to another.", author: "G.K. Chesterton" },
@@ -110,15 +88,6 @@ export default function Home() {
         } catch (err) {
             console.error("Search error:", err);
         }
-
-//         // Sample data filtering for testing (remove once API is connected)
-//         const q = query.trim().toLowerCase()
-//         const filtered = SAMPLE_COURSES.filter(
-//             (c) =>
-//                 c.name.toLowerCase().includes(q) ||
-//                 c.description.toLowerCase().includes(q)
-//         )
-//         setResults(filtered)
     }
 
     const submitFilters = async () => {
