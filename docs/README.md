@@ -4,33 +4,25 @@ A faster, cleaner browser app for viewing your college timetable and searching c
 
 Works better than the official college website.
 
-## Why people use it
+## Getting started
 
-- Loads much faster
-- Actually usable search 
-- Easy to read weekly view (which the offical website no longer has)
-- Has better collision handling than the official website
-- The back button actually works
+```sh
+git clone https://github.com/TS-24/WaffleHouseV1.git
+cd WaffleHouseV1
 
-## Main features
+# Backend 
+gradlew.bat run  # or ./gradlew run for macOS/Linux
 
-- Quick search for courses, teachers, times, departments
-- Weekly timetable view
-- Professor blacklist
-- AutoHotKey script generator so you can be the first to get into every class
+# Frontend
+cd frontend
+npm run dev  # or pnpm run dev
+```
+
+## Known bugs
+- Time filter works only if, at launch, the user provides input to all the fields (HH:mm aa) for both start time and end time
 
 
-## How to use
-
-1. Open https://yourusername.github.io/college-better-schedule/  
-   (or wherever it's hosted)
-
-2. Use it
-
-## Quick local setup
-
-setup goes here
-
+<!--
 ## AHK setup
 
 1. Enter your course codes to the script generator
@@ -39,3 +31,4 @@ setup goes here
 4. In another tab go to [Time.is](https://time.is) so you can get the exact time to submit for classes
 5. Press (whatever key combination we settle on later) when the clock strikes 5PM
 6. Enjoy your classes!
+-->
