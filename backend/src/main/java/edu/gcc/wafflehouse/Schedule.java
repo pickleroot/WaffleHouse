@@ -11,6 +11,7 @@ import java.io.File;
 /**
  * Interface for organizing courses / wrapper class for ArrayList of Courses
  * @author Ina Tang
+ * @author pickleroot
  */
 public class Schedule {
 
@@ -62,32 +63,17 @@ public class Schedule {
     }
 
     /**
-     * Return the Course based on ID.
-     * @param course The ID of the Course to find.
-     * @return - The Course if found, otherwise null.
-     */
-    public Course getCourse(Course course) {
-        for (Course c : courses) {
-            if (c.equals(course)) {
-                return new Course(course);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Add the Course only if it is not already present in the Schedule.
-     * Stores a reference to the passed-in object rather than a copy, so that
-     * mutations on the Course (e.g. seat count changes) are immediately visible
-     * through the Schedule without any extra synchronization.
-     * @param course The Course to add. Should be the live object from Search.
+     * [AI Code] Add the Course only if it is not already present in the Schedule.
+     * Stores a reference to the Course object that is in Search so that the user's schedule reflects
+     * changes to courses in the Search object.
+     * @param course The Course to add. This is a reference to the Course object in Search.
      * @return boolean - Whether the Course was added.
      */
     public boolean addCourse(Course course) {
         if (hasCourse(course)) {
             return false;
         } else {
-            courses.add(course);   // store reference, not a copy
+            courses.add(course);
             return true;
         }
     }
@@ -108,36 +94,33 @@ public class Schedule {
     }
 
     /**
-     * Save the schedule as a list of course IDs to a JSON file in the
-     * working directory (wherever the server process is running from).
-     * IDs are saved rather than full Course objects so that on load we can
-     * look up live references in Search — keeping seat counts in sync.
-     * @throws IOException Thrown if ObjectMapper has issues writing the file.
+     * [AI Code] Save the user's schedule to a JSON file.
+     * Saves the course IDs to a JSON file, that way when they are
+     * retrieved a lookup is required, and the user's schedule
+     * will accurately reflect any state changes in the backend since
+     * last save.
+     * @throws IOException If ObjectMapper struggles?
      */
     public void saveSchedule() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         List<Long> ids = courses.stream()
                 .map(Course::getID)
                 .collect(Collectors.toList());
-        // Anchor to the JVM working directory so the path is predictable
-        // regardless of how the server is launched.
+        // Ensures the filepath is the same no matter where this is run from.
         File file = new File(System.getProperty("user.dir"), "schedule.json");
         file.getParentFile().mkdirs(); // ensure parent dirs exist
         mapper.writeValue(file, ids);
     }
 
     /**
-     * Load the schedule from a JSON file in the working directory.
-     * Reads the saved course IDs and looks each one up in Search to get the
-     * live Course reference — so seat counts remain shared with Search.
-     * Courses whose IDs no longer exist in Search are silently skipped.
-     * If the save file does not exist yet, this is a no-op (schedule stays empty).
-     * @param search The Search instance holding the live course objects.
-     * @throws IOException Thrown if the file exists but cannot be read or parsed.
+     * [AI Code] Load the schedule from the JSON file.
+     * Loads the course IDs from the file and searches for the course
+     * in Search, and adds it to the schedule if it exists.
+     * @throws IOException If ObjectMapper struggles?
      */
     public void loadSchedule(Search search) throws IOException {
         File file = new File(System.getProperty("user.dir"), "schedule.json");
-        // No save file yet — nothing to load, leave the schedule as-is
+        // Returns null if the file does not exist (avoids an error thrown by ObjectMapper).
         if (!file.exists()) return;
         ObjectMapper mapper = new ObjectMapper();
         List<Long> ids = mapper.readValue(file, new TypeReference<List<Long>>() {});
@@ -145,7 +128,7 @@ public class Schedule {
         for (long id : ids) {
             Course course = search.searchByID(id);
             if (course != null) {
-                courses.add(course);  // store live reference, same as addCourse
+                courses.add(course);
             }
         }
     }
