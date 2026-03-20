@@ -96,19 +96,13 @@ public class Search {
         return results;
     }
 
-    public Course searchByID(String query) {
-        long id;
-        try {
-            id = Long.parseLong(query);
-            for (Course c : courses) {
-                if (c.getID() == id) {
-                    return c;
-                }
+    public Course searchByID(long id) {
+        for (Course course : courses) {
+            if (course.getID() == id) {
+                return course;
             }
-            return null;
-        } catch (NumberFormatException e) {
-            return null;
         }
+        return null;
     }
 
     /**

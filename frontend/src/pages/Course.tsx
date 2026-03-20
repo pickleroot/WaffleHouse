@@ -4,7 +4,7 @@ import Footer from "@/components/Footer.tsx"
 import { cn } from "@/lib/utils"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap } from "lucide-react"
+import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap, CheckCircle, AlertTriangle } from "lucide-react"
 import type { Professor, Timeslot } from "@/lib/types"
 
 interface BackendCourse {
@@ -95,15 +95,57 @@ function formatProfessorName(prof: Professor): string {
     return prof.firstName || prof.lastName || "Unknown Professor"
 }
 
+/** Convert a time value (array or string) to total minutes for overlap comparison */
+function toMinutes(time: number[] | string): number {
+    if (Array.isArray(time)) {
+        const [h = 0, m = 0] = time;
+        return h * 60 + m;
+    }
+    const [h = 0, m = 0] = time.split(":").map(Number);
+    return h * 60 + m;
+}
+
+/**
+ * Returns all courses in the schedule that have a timeslot overlapping with
+ * the candidate course. Used to show the user which specific courses conflict.
+ */
+function getConflictingCourses(candidate: DisplayCourse, schedule: any[]): any[] {
+    const conflicts: any[] = [];
+    for (const scheduled of schedule) {
+        // Don't flag the course as conflicting with itself
+        if (scheduled.id === candidate.id) continue;
+        let found = false;
+        for (const candidateSlot of (candidate.times || [])) {
+            if (found) break;
+            for (const scheduledSlot of (scheduled.times || [])) {
+                if (String(candidateSlot.day) !== String(scheduledSlot.day)) continue;
+
+                const candStart  = toMinutes(candidateSlot.start_time);
+                const candEnd    = toMinutes(candidateSlot.end_time);
+                const schedStart = toMinutes(scheduledSlot.start_time);
+                const schedEnd   = toMinutes(scheduledSlot.end_time);
+
+                if (candStart < schedEnd && candEnd > schedStart) {
+                    conflicts.push(scheduled);
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    return conflicts;
+}
+
 export default function Course() {
     const navigate = useNavigate()
     const params = useParams()
     const [course, setCourse] = React.useState<DisplayCourse | null>(null)
+    const [schedule, setSchedule] = React.useState<any[]>([])
     const [loading, setLoading] = React.useState(true)
     const [error, setError] = React.useState<string | null>(null)
 
     React.useEffect(() => {
-        const fetchCourse = async () => {
+        const fetchData = async () => {
             const courseId = params.id
             if (!courseId) {
                 setError("No course ID provided")
@@ -112,26 +154,92 @@ export default function Course() {
             }
 
             try {
-                const res = await fetch(`http://localhost:7001/course/${courseId}`)
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch course: ${res.status} ${res.statusText}`)
+                // Fetch both the course and the user's schedule in parallel
+                const [courseRes, scheduleRes] = await Promise.all([
+                    fetch(`http://localhost:7001/course/${courseId}`),
+                    fetch("http://localhost:7001/schedule"),
+                ]);
+
+                if (!courseRes.ok) {
+                    throw new Error(`Failed to fetch course: ${courseRes.status} ${courseRes.statusText}`)
                 }
-                const data: BackendCourse = await res.json()
-                const displayCourse = transformCourse(data)
-                setCourse(displayCourse)
+
+                const courseData: BackendCourse = await courseRes.json()
+                setCourse(transformCourse(courseData))
+
+                if (scheduleRes.ok) {
+                    const scheduleData = await scheduleRes.json()
+                    setSchedule(scheduleData)
+                }
             } catch (err) {
-                console.error("Error fetching course:", err)
+                console.error("Error fetching data:", err)
                 setError("Failed to load course details")
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchCourse()
+        fetchData()
     }, [params.id])
 
     const handleBack = () => {
         navigate("/")
+    }
+
+    const handleAdd = async () => {
+        if (!course) return;
+        try {
+            const res = await fetch("http://localhost:7001/course", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(course),
+            });
+            if (!res.ok) {
+                console.error(`Failed to add course: ${res.status} ${res.statusText}`);
+                return;
+            }
+            const added: boolean = await res.json();
+            if (added) {
+                // Re-fetch both schedule (to flip isInSchedule) and the course itself
+                // (to get the updated openSeats from the backend)
+                const [scheduleRes, courseRes] = await Promise.all([
+                    fetch("http://localhost:7001/schedule"),
+                    fetch(`http://localhost:7001/course/${course.id}`),
+                ]);
+                if (scheduleRes.ok) setSchedule(await scheduleRes.json());
+                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
+            }
+        } catch (err) {
+            console.error("Error adding course:", err);
+        }
+    }
+
+    const handleRemove = async () => {
+        if (!course) return;
+        try {
+            const res = await fetch("http://localhost:7001/course", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(course),
+            });
+            if (!res.ok) {
+                console.error(`Failed to remove course: ${res.status} ${res.statusText}`);
+                return;
+            }
+            const removed: boolean = await res.json();
+            if (removed) {
+                // Re-fetch both schedule (to flip isInSchedule) and the course itself
+                // (to get the updated openSeats from the backend)
+                const [scheduleRes, courseRes] = await Promise.all([
+                    fetch("http://localhost:7001/schedule"),
+                    fetch(`http://localhost:7001/course/${course.id}`),
+                ]);
+                if (scheduleRes.ok) setSchedule(await scheduleRes.json());
+                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
+            }
+        } catch (err) {
+            console.error("Error removing course:", err);
+        }
     }
 
     if (loading) {
@@ -165,9 +273,14 @@ export default function Course() {
     }
 
     const closedSeats = course.totalSeats - course.openSeats
-    const seatPercentage = course.totalSeats > 0 
-        ? Math.round((closedSeats / course.totalSeats) * 100) 
+    const seatPercentage = course.totalSeats > 0
+        ? Math.round((closedSeats / course.totalSeats) * 100)
         : 0
+
+    // Determine schedule status for this course
+    const isInSchedule = schedule.some((c: any) => c.id === course.id)
+    const conflictingCourses = isInSchedule ? [] : getConflictingCourses(course, schedule)
+    const hasConflicts = conflictingCourses.length > 0
 
     return (
         <div className="min-h-screen flex flex-col bg-background">
@@ -188,6 +301,58 @@ export default function Course() {
 
             <main className="flex flex-1 justify-center px-6 pb-16">
                 <div className="w-full max-w-3xl mt-8 space-y-6">
+
+                    {/* Schedule status banner — shown only if relevant */}
+                    {isInSchedule && (
+                        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200 border border-green-200 dark:border-green-800">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle className="h-5 w-5 shrink-0" />
+                                <span className="text-sm font-medium">This course is in your schedule.</span>
+                            </div>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleRemove}
+                            >
+                                Remove
+                            </Button>
+                        </div>
+                    )}
+
+                    {hasConflicts && (
+                        <div className="px-4 py-3 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                            <div className="flex items-center gap-3 mb-2">
+                                <AlertTriangle className="h-5 w-5 shrink-0" />
+                                <span className="text-sm font-medium">
+                                    This course has a time conflict with the following course{conflictingCourses.length > 1 ? "s" : ""} in your schedule:
+                                </span>
+                            </div>
+                            <ul className="ml-8 space-y-1">
+                                {conflictingCourses.map((c: any) => (
+                                    <li key={c.id} className="text-sm">
+                                        {c.subject} {c.code} – {c.name}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {course.openSeats === 0 && (
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                            <AlertTriangle className="h-5 w-5 shrink-0" />
+                            <span className="text-sm font-medium">This course has no open seats.</span>
+                        </div>
+                    )}
+
+                    {/* Add button — only shown when the course is not in the schedule and has no conflicts */}
+                    {!isInSchedule && !hasConflicts && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>
+                                Add to Schedule
+                            </Button>
+                        </div>
+                    )}
+
                     <Card>
                         <CardHeader>
                             <div className="flex items-start justify-between">
@@ -219,8 +384,8 @@ export default function Course() {
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <GraduationCap className="h-4 w-4" />
                                     <span>
-                                        {course.professors.length === 1 
-                                            ? "Instructor" 
+                                        {course.professors.length === 1
+                                            ? "Instructor"
                                             : "Instructors"
                                         }: {course.professors.map(formatProfessorName).join(", ")}
                                     </span>

@@ -61,6 +61,23 @@ public class Course {
         this.isOpen = isOpen;
         this.location = location;
     }
+    public Course(Course course) {
+        this.id = course.id;
+        this.subject = course.subject;
+        this.code = course.code;
+        this.section = course.section;
+        this.name = course.name;
+        this.professors = course.professors;
+        this.creditHours = course.creditHours;
+        this.openSeats = course.openSeats;
+        this.totalSeats = course.totalSeats;
+        this.year = course.year;
+        this.semester = course.semester;
+        this.times = course.times;
+        this.isLab = course.isLab;
+        this.isOpen = course.isOpen;
+        this.location = course.location;
+    }
 
     public long getID() {
         return id;
@@ -153,6 +170,25 @@ public class Course {
     }
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    /**
+     * Decrement openSeats by 1 when a student adds this course.
+     * Guarded at 0 so it never goes negative.
+     */
+    public void decrementOpenSeats() {
+        if (openSeats > 0) openSeats--;
+    }
+
+    /**
+     * Increment openSeats by 1 when a student removes this course.
+     */
+    public void incrementOpenSeats() {
+        openSeats++;
+    }
+
+    public boolean equals(Course course) {
+        return this.id == course.id;
     }
 
     public String timesToString() {

@@ -62,31 +62,82 @@ public class Driver {
         // Get (courses in user's) schedule
         app.get("/schedule", ctx -> ctx.json(schedule.getCourses()));
 
-        // Get course (for viewing course info)
+        // Get course from path. Returns null if course ID
+        // does not exist.
         app.get("/course/{id}", ctx -> {
-            String id = ctx.pathParam("id");
+            String query = ctx.pathParam("id");
             // Handle cases where the path parameter is missing or empty
-            if (id == null || id.isEmpty()) {
+            if (query.isEmpty() || query.matches("[^0-9]+")) {
                 ctx.status(400); // Bad Request
-                ctx.result("Missing 'id' path parameter");
+                ctx.result("Missing proper 'id' path parameter");
                 return;
             }
-            Course result = search.searchByID(id);  // Search
-            ctx.json(result);  // return results in JSON
+            long id = Long.parseLong(query);
+            ctx.json(search.searchByID(id));  // return results in JSON
         });
 
-        // Add course to schedule
+        // Add a Course to the Schedule, and return success or failure.
+        // Looks up the live Course object in Search by ID so that Schedule stores
+        // a reference to the same object — meaning seat count changes are reflected
+        // everywhere that holds a reference to that Course.
+        // Seat count is only adjusted for open courses — closed courses may still be
+        // added to the schedule, but their seat count is left unchanged.
         app.post("/course", ctx -> {
-            Course course = ctx.bodyAsClass(Course.class);
-            schedule.addCourse(course);
-            ctx.json(schedule.getCourses());  // return updated schedule
+            Course incoming = ctx.bodyAsClass(Course.class);
+            Course actual = search.searchByID(incoming.getID());
+            if (actual == null) {
+                ctx.status(404);
+                ctx.result("Course not found");
+                return;
+            }
+            boolean added = schedule.addCourse(actual);
+            if (added && actual.getIsOpen()) {
+                actual.decrementOpenSeats();
+            }
+            ctx.json(added);
         });
 
-        // Remove course from schedule
+        // Remove a Course from the Schedule, and return success or failure.
+        // Uses the live reference stored in Schedule so the same object whose
+        // seat count was decremented on add is incremented on remove.
+        // Seat count is only restored for open courses, matching the add behaviour.
         app.delete("/course", ctx -> {
-            Course course = ctx.bodyAsClass(Course.class);
-            schedule.removeCourse(course);
-            ctx.json(schedule.getCourses());  // return updated schedule
+            Course incoming = ctx.bodyAsClass(Course.class);
+            Course actual = search.searchByID(incoming.getID());
+            if (actual == null) {
+                ctx.status(404);
+                ctx.result("Course not found");
+                return;
+            }
+            boolean removed = schedule.removeCourse(actual);
+            if (removed && actual.getIsOpen()) {
+                actual.incrementOpenSeats();
+            }
+            ctx.json(removed);
+        });
+
+        // Save the current schedule to disk as a list of course IDs.
+        app.post("/schedule/save", ctx -> {
+            try {
+                schedule.saveSchedule();
+                ctx.status(200);
+                ctx.result("Schedule saved");
+            } catch (Exception e) {
+                ctx.status(500);
+                ctx.result("Failed to save schedule: " + e.getMessage());
+            }
+        });
+
+        // Load the schedule from disk, rehydrating live Course references from Search.
+        // Returns the loaded schedule so the frontend can update its state.
+        app.post("/schedule/load", ctx -> {
+            try {
+                schedule.loadSchedule(search);
+                ctx.json(schedule.getCourses());
+            } catch (Exception e) {
+                ctx.status(500);
+                ctx.result("Failed to load schedule: " + e.getMessage());
+            }
         });
     }
 
