@@ -1,16 +1,17 @@
 package edu.gcc.wafflehouse;
 
 import java.util.ArrayList;
-import java.time.format.DateTimeFormatter;
 
+/**
+ * Methods and variables to work with course data.
+ * @author Ina Tang
+ * @author pickleroot
+ */
 public class Course {
-
-    // Some extra data
-    private static final DateTimeFormatter format = DateTimeFormatter.ofPattern("hh:mm a");
 
     // Member variables. These *should* mirror closely the member
     // variables in Deserialize.java, just renamed to be more
-    // intuitive
+    // intuitive.
     private long id;
     private String subject;
     private int code;
@@ -27,24 +28,10 @@ public class Course {
     private boolean isOpen;
     private String location;
 
-    // For Jackson deserialization
+    // For Jackson deserialization.
     public Course() {}
 
-    public Course(long id,
-                  String subject,
-                  int code,
-                  char section,
-                  String name,
-                  ArrayList<Professor> professors,
-                  int creditHours,
-                  int openSeats,
-                  int totalSeats,
-                  int year,
-                  String semester,
-                  ArrayList<Timeslot> times,
-                  boolean isLab,
-                  boolean isOpen,
-                  String location) {
+    public Course(long id, String subject, int code, char section, String name, ArrayList<Professor> professors, int creditHours, int openSeats, int totalSeats, int year, String semester, ArrayList<Timeslot> times, boolean isLab, boolean isOpen, String location) {
         this.id = id;
         this.subject = subject;
         this.code = code;
@@ -61,6 +48,11 @@ public class Course {
         this.isOpen = isOpen;
         this.location = location;
     }
+
+    /**
+     * Create a copy from another course.
+     * @param course The course to copy.
+     */
     public Course(Course course) {
         this.id = course.id;
         this.subject = course.subject;
@@ -79,6 +71,7 @@ public class Course {
         this.location = course.location;
     }
 
+    // Getters for member variables.
     public long getID() {
         return id;
     }
@@ -125,7 +118,8 @@ public class Course {
         return location;
     }
 
-    // Setters (needed for Jackson deserialization)
+    // Setters for member variables, and
+    // also needed for Jackson deserialization.
     public void setId(long id) {
         this.id = id;
     }
@@ -173,24 +167,36 @@ public class Course {
     }
 
     /**
-     * Decrement openSeats by 1 when a student adds this course.
-     * Guarded at 0 so it never goes negative.
+     * [AI Code] Decrease the number of open seats by 1, as long as it's
+     * not already at 0. This way, if a student can get written into a full
+     * class, the number of open seats doesn't go negative.
      */
     public void decrementOpenSeats() {
         if (openSeats > 0) openSeats--;
     }
 
     /**
-     * Increment openSeats by 1 when a student removes this course.
+     * [AI Code] Increase the number of open seats by 1 when a student
+     * removes this course.
      */
     public void incrementOpenSeats() {
         openSeats++;
     }
 
+    /**
+     * Compare two course objects.
+     * @param course The course to compare the caller to.
+     * @return boolean - True if the course IDs are equal,
+     * false otherwise.
+     */
     public boolean equals(Course course) {
         return this.id == course.id;
     }
 
+    /**
+     * Return a string of the course's timeslots.
+     * @return String - The string made from the course's timeslots.
+     */
     public String timesToString() {
         StringBuilder sb = new StringBuilder();
         for (Timeslot time : times) {
@@ -199,6 +205,10 @@ public class Course {
         return sb.toString();
     }
 
+    /**
+     * Return a string of the course's professors.
+     * @return String - The string composed of the course's professors.
+     */
     public String professorsToString() {
         StringBuilder sb = new StringBuilder();
         for (Professor prof : professors) {

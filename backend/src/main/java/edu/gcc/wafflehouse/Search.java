@@ -4,14 +4,17 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 /**
- * Fake database, search function, cached search results, filter functions
+ * Implements a pseudo database,
  * @author Ina Tang
  */
 public class Search {
+
+    // The main member variables.
     private ArrayList<Course> courses;  // temporary db
     private ArrayList<Course> results;  // results from searching the query; "cache"
 
-    // Filters: Hardcoded one-by-one so we have easy access to each type of filter (not all in one list w/o clear order)
+    // Filters: Hardcoded one-by-one so we have easy access to each
+    // type of filter (not all in one list w/o clear order)
     public SemesterFilter semeFilter;
     public CourseNameFilter nameFilter;
     public ProfessorFilter profFilter;
@@ -21,7 +24,7 @@ public class Search {
     public YearFilter yearFilter;
 
     /**
-     * Initialize the fake database, cached results, and filters
+     * Initialize the pseudo database, cached results, and filters.
      */
     public Search() {
         this.courses = new ArrayList<>();
@@ -38,21 +41,28 @@ public class Search {
     }
 
     /**
-     * Search the database for matching courses
-     *
-     * @param query user input
-     * @return courses with at least one field from name, code, dept, or faculty containing query as a substr
+     * Search the database for courses where the query string
+     * matches either the course ID, name, subject, code, full code,
+     * and professors. Fields are converted to strings so that the substring
+     * can be searched in them.
+     * @param query The user's input.
+     * @return ArrayList<Course> - Courses with at least one field from name,
+     * code, dept, or faculty containing query as a substring.
      */
     public ArrayList<Course> search(String query) {
         ArrayList<Course> results = new ArrayList<>();
 
+        // Return null if the query is empty.
         if (query == null) {
             this.results = results;
             return results;
         }
 
+        // Convert to lowercase for more general search.
         String q = query.toLowerCase();
 
+        // Loop through the courses loaded in the pseudo-database
+        // and add any course that matches the if statements.
         for (Course c : courses) {
 
             boolean match = false;
@@ -69,8 +79,9 @@ public class Search {
                 match = true;
             }
 
+            // Combine the subject (COMP) and code (141) so that a search for
+            // the combination returns correctly.
             String fullCode = (c.getSubject() + " " + c.getCode()).toLowerCase();
-
             if (fullCode.contains(q)) {
                 match = true;
             }
@@ -98,6 +109,11 @@ public class Search {
         return results;
     }
 
+    /**
+     * Search the pseudo-database for the course identified by the ID.
+     * @param id The course ID to search for.
+     * @return Course - The reference to the course.
+     */
     public Course searchByID(long id) {
         for (Course course : courses) {
             if (course.getID() == id) {
@@ -108,8 +124,7 @@ public class Search {
     }
 
     /**
-     * Apply the filters one-by-one, using a predicate approach
-     *
+     * Apply the filters one-by-one, using a predicate approach.
      * @return filtered results
      */
     public ArrayList<Course> getFilteredResults() {

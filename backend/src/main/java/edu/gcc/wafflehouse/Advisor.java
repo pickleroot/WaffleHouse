@@ -1,8 +1,11 @@
 package edu.gcc.wafflehouse;
-//@author wade douglas
-// use this script to remove dr andersen and wagner bruhh
 
 import java.util.ArrayList;
 
+/**
+ * An extension of Profile that each Student will connect to.
+ * @author Uncle-Wade
+ * @author TS-24
+ */
 public class Advisor extends Profile {
 }
