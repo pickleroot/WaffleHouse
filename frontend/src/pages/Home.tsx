@@ -71,6 +71,22 @@ export default function Home() {
         setEvents(toEvents(data));
     };
 
+    function courseConflicts(candidate: any, schedule: any[]): boolean {
+
+        candidate.getTimes()
+        for (const course of schedule) {
+            for (const time1 of candidate.getTimes() {
+                for (const time2 of course.getTimes() {
+                    if ((time1.getend_time() > time2.getstart_time())
+                        && (time1.getstart_time() < time2.getend_time())
+                        && (time1.getDay() == time2.getDay()) {
+                            return true;
+                    }
+                }
+            }
+        }
+    }
+
     // Fetch schedule on mount
     useEffect(() => {
         fetch("http://localhost:7001/schedule")

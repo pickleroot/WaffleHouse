@@ -62,31 +62,34 @@ public class Driver {
         // Get (courses in user's) schedule
         app.get("/schedule", ctx -> ctx.json(schedule.getCourses()));
 
-        // Get course (for viewing course info)
+        // Get course from path. Returns null if course ID
+        // does not exist.
         app.get("/course/{id}", ctx -> {
-            String id = ctx.pathParam("id");
+            String query = ctx.pathParam("id");
             // Handle cases where the path parameter is missing or empty
-            if (id == null || id.isEmpty()) {
+            if (query.isEmpty() || query.matches("[^0-9]+")) {
                 ctx.status(400); // Bad Request
-                ctx.result("Missing 'id' path parameter");
+                ctx.result("Missing proper 'id' path parameter");
                 return;
             }
-            Course result = search.searchByID(id);  // Search
-            ctx.json(result);  // return results in JSON
+            long id = Long.parseLong(query);
+            ctx.json(search.searchByID(id));  // return results in JSON
         });
 
-        // Add course to schedule
+        // Add a Course to the Schedule, and return success or failure.
+        // The frontend should update its own schedule based on the boolean
+        // response here.
         app.post("/course", ctx -> {
             Course course = ctx.bodyAsClass(Course.class);
-            schedule.addCourse(course);
-            ctx.json(schedule.getCourses());  // return updated schedule
+            ctx.json(schedule.addCourse(course));
         });
 
-        // Remove course from schedule
+        // Remove a Course from the Schedule, and return success or failure.
+        // The frontend should update its own schedule based on the boolean
+        // response here.
         app.delete("/course", ctx -> {
             Course course = ctx.bodyAsClass(Course.class);
-            schedule.removeCourse(course);
-            ctx.json(schedule.getCourses());  // return updated schedule
+            ctx.json(schedule.removeCourse(course));  // return updated schedule
         });
     }
 
