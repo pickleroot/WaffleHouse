@@ -172,6 +172,21 @@ public class Course {
         this.location = location;
     }
 
+    /**
+     * Decrement openSeats by 1 when a student adds this course.
+     * Guarded at 0 so it never goes negative.
+     */
+    public void decrementOpenSeats() {
+        if (openSeats > 0) openSeats--;
+    }
+
+    /**
+     * Increment openSeats by 1 when a student removes this course.
+     */
+    public void incrementOpenSeats() {
+        openSeats++;
+    }
+
     public boolean equals(Course course) {
         return this.id == course.id;
     }

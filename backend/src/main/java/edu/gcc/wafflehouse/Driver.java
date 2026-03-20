@@ -77,19 +77,40 @@ public class Driver {
         });
 
         // Add a Course to the Schedule, and return success or failure.
-        // The frontend should update its own schedule based on the boolean
-        // response here.
+        // Looks up the live Course object in Search by ID so that Schedule stores
+        // a reference to the same object — meaning seat count changes are reflected
+        // everywhere that holds a reference to that Course.
         app.post("/course", ctx -> {
-            Course course = ctx.bodyAsClass(Course.class);
-            ctx.json(schedule.addCourse(course));
+            Course incoming = ctx.bodyAsClass(Course.class);
+            Course actual = search.searchByID(incoming.getID());
+            if (actual == null) {
+                ctx.status(404);
+                ctx.result("Course not found");
+                return;
+            }
+            boolean added = schedule.addCourse(actual);
+            if (added) {
+                actual.decrementOpenSeats();
+            }
+            ctx.json(added);
         });
 
         // Remove a Course from the Schedule, and return success or failure.
-        // The frontend should update its own schedule based on the boolean
-        // response here.
+        // Uses the live reference stored in Schedule so the same object whose
+        // seat count was decremented on add is incremented on remove.
         app.delete("/course", ctx -> {
-            Course course = ctx.bodyAsClass(Course.class);
-            ctx.json(schedule.removeCourse(course));  // return updated schedule
+            Course incoming = ctx.bodyAsClass(Course.class);
+            Course actual = search.searchByID(incoming.getID());
+            if (actual == null) {
+                ctx.status(404);
+                ctx.result("Course not found");
+                return;
+            }
+            boolean removed = schedule.removeCourse(actual);
+            if (removed) {
+                actual.incrementOpenSeats();
+            }
+            ctx.json(removed);
         });
     }
 

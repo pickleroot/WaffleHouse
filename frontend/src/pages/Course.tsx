@@ -200,9 +200,14 @@ export default function Course() {
             }
             const added: boolean = await res.json();
             if (added) {
-                // Re-fetch schedule so isInSchedule updates and the button switches to Remove
-                const scheduleRes = await fetch("http://localhost:7001/schedule");
+                // Re-fetch both schedule (to flip isInSchedule) and the course itself
+                // (to get the updated openSeats from the backend)
+                const [scheduleRes, courseRes] = await Promise.all([
+                    fetch("http://localhost:7001/schedule"),
+                    fetch(`http://localhost:7001/course/${course.id}`),
+                ]);
                 if (scheduleRes.ok) setSchedule(await scheduleRes.json());
+                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
             }
         } catch (err) {
             console.error("Error adding course:", err);
@@ -223,8 +228,14 @@ export default function Course() {
             }
             const removed: boolean = await res.json();
             if (removed) {
-                const scheduleRes = await fetch("http://localhost:7001/schedule");
+                // Re-fetch both schedule (to flip isInSchedule) and the course itself
+                // (to get the updated openSeats from the backend)
+                const [scheduleRes, courseRes] = await Promise.all([
+                    fetch("http://localhost:7001/schedule"),
+                    fetch(`http://localhost:7001/course/${course.id}`),
+                ]);
                 if (scheduleRes.ok) setSchedule(await scheduleRes.json());
+                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
             }
         } catch (err) {
             console.error("Error removing course:", err);

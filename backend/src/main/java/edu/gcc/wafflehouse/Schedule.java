@@ -74,14 +74,17 @@ public class Schedule {
 
     /**
      * Add the Course only if it is not already present in the Schedule.
-     * @param course The ID of the Course to be added.
+     * Stores a reference to the passed-in object rather than a copy, so that
+     * mutations on the Course (e.g. seat count changes) are immediately visible
+     * through the Schedule without any extra synchronization.
+     * @param course The Course to add. Should be the live object from Search.
      * @return boolean - Whether the Course was added.
      */
     public boolean addCourse(Course course) {
         if (hasCourse(course)) {
             return false;
         } else {
-            courses.add(new Course(course));
+            courses.add(course);   // store reference, not a copy
             return true;
         }
     }

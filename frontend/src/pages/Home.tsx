@@ -100,6 +100,22 @@ export default function Home() {
             .catch((err) => console.error("Failed to fetch schedule:", err));
     }, []);
 
+    /**
+     * Fetch a single course by ID and replace its entry in `results` state.
+     * Called after add/remove so that openSeats updates in the search table
+     * without needing to re-run the entire search query.
+     */
+    const refreshCourseInResults = useCallback(async (id: number) => {
+        try {
+            const res = await fetch(`http://localhost:7001/course/${id}`);
+            if (!res.ok) return;
+            const updated = await res.json();
+            setResults(prev => prev.map(c => c.id === id ? updated : c));
+        } catch (err) {
+            console.error("Failed to refresh course in results:", err);
+        }
+    }, []);
+
     useEffect(() => {
         fetchSchedule();
     }, [fetchSchedule]);
@@ -151,66 +167,116 @@ export default function Home() {
             if (removed) {
                 console.log("Course removed successfully:", course.name);
                 fetchSchedule();
+                refreshCourseInResults(course.id);
             } else {
                 console.warn("Course was not removed (not in schedule?):", course.name);
             }
         } catch (err) {
             console.error("Error removing course:", err);
         }
-    }, [fetchSchedule]);
+    }, [fetchSchedule, refreshCourseInResults]);
 
     // Columns for the search results table
     const columns: ColumnDef<Course>[] = [
-        { accessorKey: "subject", header: "Dept" },
-        { accessorKey: "code", header: "Code" },
-        { accessorKey: "section", header: "Section" },
+        {
+            accessorKey: "subject",
+            header: "Dept",
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                return <span className={dimmed ? "opacity-30" : ""}>{row.original.subject}</span>;
+            },
+        },
+        {
+            accessorKey: "code",
+            header: "Code",
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                return <span className={dimmed ? "opacity-30" : ""}>{row.original.code}</span>;
+            },
+        },
+        {
+            accessorKey: "section",
+            header: "Section",
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                return <span className={dimmed ? "opacity-30" : ""}>{row.original.section}</span>;
+            },
+        },
         {
             accessorKey: "name",
             header: "Course name",
-            cell: ({ row }) => (
-                // Course name is always clickable, even when the row is greyed out.
-                // pointer-events-none is intentionally NOT applied to this cell.
-                <button
-                    onClick={() => navigate(`/course/${row.original.id}`)}
-                    className="text-left hover:underline cursor-pointer text-foreground"
-                >
-                    {row.original.name}
-                </button>
-            )
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                // The link stays fully clickable even when dimmed — only the text fades,
+                // not the pointer events, so the user can still navigate to the course page.
+                return (
+                    <button
+                        onClick={() => navigate(`/course/${row.original.id}`)}
+                        className="text-left hover:underline cursor-pointer text-foreground"
+                    >
+                        <span className={dimmed ? "opacity-30" : ""}>{row.original.name}</span>
+                    </button>
+                );
+            },
         },
-        { accessorKey: "creditHours", header: "Credits" },
+        {
+            accessorKey: "creditHours",
+            header: "Credits",
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                return <span className={dimmed ? "opacity-30" : ""}>{row.original.creditHours}</span>;
+            },
+        },
+        {
+            accessorKey: "openSeats",
+            header: "Open Seats",
+            cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
+                return <span className={dimmed ? "opacity-30" : ""}>{row.original.openSeats}</span>;
+            },
+        },
         {
             id: "professor",
             header: "Professor",
             cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
                 const professors = row.original.professors;
                 if (!Array.isArray(professors)) return null;
-                return professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
+                const text = professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
+                return <span className={dimmed ? "opacity-30" : ""}>{text}</span>;
             },
         },
         {
             id: "time",
             header: "Days & Time",
             cell: ({ row }) => {
+                const dimmed = scheduledIds.has(row.original.id) || conflictingIds.has(row.original.id);
                 const times = row.original.times;
                 if (!Array.isArray(times)) return null;
-                return times.map((t) => {
+                const text = times.map((t) => {
                     const day   = String(t.day);
                     const start = Array.isArray(t.start_time) ? formatTime(t.start_time) : String(t.start_time);
                     const end   = Array.isArray(t.end_time)   ? formatTime(t.end_time)   : String(t.end_time);
                     return `${day} ${start}–${end}`;
                 }).join(", ");
+                return <span className={dimmed ? "opacity-30" : ""}>{text}</span>;
             },
         },
         {
             id: "action",
             header: "",
+            // meta.sticky is read by DataTable to apply `sticky right-0 bg-background`
+            // to this column's <th> and <td>, keeping it pinned during horizontal scroll.
+            // Add this to DataTable.tsx:
+            //   const isSticky = (column.columnDef.meta as any)?.sticky;
+            //   Apply cn("sticky right-0 bg-background", ...) to the <th> and <td> when isSticky is true.
+            meta: { sticky: true },
             cell: ({ row }) => {
                 const course = row.original;
                 const inSchedule = scheduledIds.has(course.id);
                 const conflicts  = conflictingIds.has(course.id);
 
-                // Already in the schedule — replace Add with Remove
+                // Already in the schedule — show Remove
                 if (inSchedule) {
                     return (
                         <Button
@@ -223,7 +289,7 @@ export default function Home() {
                     );
                 }
 
-                // Time conflict — show nothing (row is already greyed out)
+                // Time conflict — no button (row text is already dimmed)
                 if (conflicts) {
                     return null;
                 }
@@ -248,6 +314,7 @@ export default function Home() {
                                 if (added) {
                                     console.log("Course added successfully:", course.name);
                                     fetchSchedule();
+                                    refreshCourseInResults(course.id);
                                 } else {
                                     console.warn("Course was not added (already in schedule?):", course.name);
                                 }
@@ -268,7 +335,18 @@ export default function Home() {
         { accessorKey: "subject", header: "Dept" },
         { accessorKey: "code", header: "Code" },
         { accessorKey: "section", header: "Section" },
-        { accessorKey: "name", header: "Course name" },
+        {
+            accessorKey: "name",
+            header: "Course name",
+            cell: ({ row }) => (
+                <button
+                    onClick={() => navigate(`/course/${row.original.id}`)}
+                    className="text-left hover:underline cursor-pointer text-foreground"
+                >
+                    {row.original.name}
+                </button>
+            ),
+        },
         {
             id: "professor",
             header: "Professor",
@@ -295,6 +373,7 @@ export default function Home() {
         {
             id: "remove",
             header: "",
+            meta: { sticky: true },
             cell: ({ row }) => (
                 <Button
                     variant="destructive"
@@ -405,26 +484,19 @@ export default function Home() {
                         <div className="flex-1 flex flex-col items-center px-6 pt-8">
                             <div className="w-full max-w-4xl mx-auto">
                                 {/*
-                                  * For courses that can't be added (already in schedule or time
-                                  * conflict), all cells except the last (action) column are dimmed
-                                  * using a Tailwind arbitrary child variant. This keeps the Remove
-                                  * button at full color while greying out the text.
+                                  * Dimming is handled per-cell inside each column's cell renderer
+                                  * using opacity-30 on a wrapping <span>, so Tailwind always sees
+                                  * the class as a static string and includes it in the build.
                                   *
-                                  * Requires a small change to DataTable.tsx:
-                                  *   - Add `getRowClassName?: (row: TData) => string` to props
-                                  *   - Apply it to each <tr>: className={cn("border-b ...", getRowClassName?.(row.original))}
+                                  * The action column uses meta: { sticky: true }. To make it pin
+                                  * to the right edge during horizontal scroll, add this to DataTable.tsx
+                                  * wherever <th> and <td> are rendered:
+                                  *   const isSticky = (column.columnDef.meta as any)?.sticky;
+                                  *   className={cn("...", isSticky && "sticky right-0 bg-background")}
                                   */}
                                 <DataTable
                                     columns={columns}
                                     data={results}
-                                    getRowClassName={(course: any) =>
-                                        scheduledIds.has(course.id) || conflictingIds.has(course.id)
-                                            // Grey out all cells except the last one (the action column),
-                                            // so the Remove button keeps its full color while the rest
-                                            // of the row is visually dimmed.
-                                            ? "[&>td:not(:last-child)]:opacity-30"
-                                            : ""
-                                    }
                                 />
                             </div>
                         </div>
