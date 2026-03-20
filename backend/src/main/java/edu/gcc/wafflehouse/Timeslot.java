@@ -2,6 +2,10 @@ package edu.gcc.wafflehouse;
 
 import java.time.LocalTime;
 
+/**
+ * Timeslot class used to store a class Day of week and time of day.
+ * This class was created for quick comparison (as opposed to comparing times as Strings), and for faster date/time formatting
+ */
 public class Timeslot {
     private char day;
     private LocalTime start_time;

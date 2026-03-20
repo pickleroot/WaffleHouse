@@ -23,6 +23,8 @@ public class Main {
         Search search = new Search();
         search.setCourses(ds.getCourses());
 
+        System.out.println(ds.getCourses().get(6));
+
 
         Javalin app = Javalin.create(config -> {
             // Enable CORS (allow requests from React dev server)

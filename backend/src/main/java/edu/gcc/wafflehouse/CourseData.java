@@ -7,6 +7,18 @@ import java.sql.Time;
 import java.util.ArrayList;
 
 
+/**
+ * Object for representing raw course data as read from courses.json.
+ *
+ * <p>{@code CourseData} is only used for deserialization via Jackson, mapping
+ * JSON fields directly to Java fields before being transformed into a {@link Course}.
+ * It contains all the course info like:
+ * subject, course number, section, faculty, schedule, and seat availability.</p>
+ *
+ * <p>It also provides helper methods for extracting structured information from
+ * composite fields, such as parsing the year and term from the {@code semester}
+ * string.</p>
+ */
 public class CourseData {
     private int credits;
     private ArrayList<String> faculty; // professors teaching this specific section, NOT all professors teaching the class
