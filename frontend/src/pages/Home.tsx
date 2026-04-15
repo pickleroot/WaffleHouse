@@ -10,7 +10,24 @@ import type { Mode, Course } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import * as React from "react";
 import SearchCalendarBar from "@/components/SearchCalendarBar.tsx";
-import FilterGroup from "@/components/FilterGroup.tsx";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+
+/**
+ * Tiny component that subscribes to the sidebar context so the heavy
+ * Home component doesn't have to re-render on every sidebar toggle.
+ */
+function SidebarAutoOpen({ hasSearched, mode }: { hasSearched: boolean; mode: Mode }) {
+    const { setOpen } = useSidebar();
+    const opened = useRef(false);
+    useEffect(() => {
+        if (hasSearched && mode === "search" && !opened.current) {
+            opened.current = true;
+            setOpen(true);
+        }
+    }, [hasSearched, mode, setOpen]);
+    return null;
+}
+import { AppSidebar } from "@/components/AppSidebar.tsx"
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 
@@ -88,7 +105,7 @@ export default function Home() {
     const [mode, setMode] = useState<Mode>("search")
     const [events, setEvents] = useState<CourseEvent[]>([])
     const [schedule, setSchedule] = useState<any[]>([])
-    const filterFormRef = useRef<HTMLFormElement>(null)
+    const filterContainerRef = useRef<HTMLDivElement>(null)
     const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], [])
 
     /**
@@ -405,13 +422,20 @@ export default function Home() {
         },
     ];
 
+    const filterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /** Debounced wrapper — waits 300ms after the last change before fetching */
+    const debouncedSubmitFilters = useCallback(() => {
+        if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+        filterTimerRef.current = setTimeout(() => submitFilters(), 300);
+    }, []);
+
     const submitFilters = async () => {
-        if (!filterFormRef.current) return;
-        const formData = new FormData(filterFormRef.current);
+        if (!filterContainerRef.current) return;
 
         const getString = (name: string): string | null => {
-            const val = formData.get(name);
-            return val && String(val).trim() ? String(val).trim() : null;
+            const el = filterContainerRef.current!.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${name}"]`);
+            return el && el.value.trim() ? el.value.trim() : null;
         };
 
         const startTime = getString("start-time");
@@ -453,13 +477,11 @@ export default function Home() {
         }
     }
 
-    const handleFilter = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        submitFilters();
-    }
-
     return (
-        <div className="min-h-screen flex flex-col bg-background">
+        <div ref={filterContainerRef} className="flex flex-1 min-h-screen">
+        <SidebarAutoOpen hasSearched={hasSearched} mode={mode} />
+        <AppSidebar onFilterChange={debouncedSubmitFilters} />
+        <div className="min-h-screen flex flex-1 flex-col bg-background">
             {/* Transient save/load notification — auto-dismisses after 3 seconds */}
             {toast && (
                 <div className={cn(
@@ -472,8 +494,15 @@ export default function Home() {
                 </div>
             )}
 
+            {/* Sidebar toggle — sticky top-left */}
+            {hasSearched && mode === "search" && (
+                <div className="sticky top-0 z-20 flex items-center h-10 px-4 pt-4">
+                    <SidebarTrigger />
+                </div>
+            )}
+
             {/* Header */}
-            <header className="relative h-16 flex items-center px-6 gap-2">
+            <header className="relative h-16 flex items-center px-6 mt-4 gap-2">
                 <SearchCalendarBar
                     hasSearched={hasSearched}
                     setHasSearched={setHasSearched}
@@ -540,7 +569,7 @@ export default function Home() {
             </header>
 
             {/* Main Content */}
-            <main className="flex flex-1 justify-center min-h-full mb-16">
+            <div className="flex flex-1 justify-center min-h-full mb-16">
                 {/* Inspirational quote (shown before any search) */}
                 {mode === "search" && !hasSearched && (
                     <div className="flex-1 flex flex-col items-center justify-center px-6">
@@ -558,9 +587,6 @@ export default function Home() {
                 {/* Search results + filters */}
                 {mode === "search" && hasSearched && (
                     <div className="block min-w-4/5 mt-8">
-                        <form ref={filterFormRef} onSubmit={handleFilter} onChange={() => submitFilters()}>
-                            <FilterGroup className="p-4 bg-neutral-50" />
-                        </form>
                         <div className="flex-1 flex flex-col items-center px-6 pt-8">
                             <div className="w-full max-w-4xl mx-auto">
                                 {/*
@@ -595,10 +621,11 @@ export default function Home() {
                         )}
                     </div>
                 )}
-            </main>
+            </div>
 
             {/* Footer */}
             <Footer />
+        </div>
         </div>
     )
 }
