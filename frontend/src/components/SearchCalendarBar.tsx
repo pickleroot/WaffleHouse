@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Mode, Course } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { searchCourses } from "@/services/search"
 
 
 interface SearchCalendarBarProps {
@@ -25,19 +26,17 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
 
     const handleSearch = async (e: React.SubmitEvent) => {
         e.preventDefault();
+
+        if (!query.trim()) return;
+
         try {
-            const res = await fetch(`http://localhost:7001/search?q=${query}`);
-            if (!res.ok) {
-                console.error(`Search failed: ${res.status} ${res.statusText}`);
-                return;
-            }
-            const searchRes: Course[] = await res.json();
-            setResults(searchRes);
+            const results = await searchCourses(query);
+            setResults(results);
             setHasSearched(true);
         } catch (err) {
             console.error("Search error:", err);
         }
-    }
+    };
 
     return (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

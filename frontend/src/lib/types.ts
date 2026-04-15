@@ -32,3 +32,47 @@ export interface Course {
     isOpen: boolean
     location: string
 }
+
+export interface BackendCourse {
+    id: number
+    subject: string
+    code: number
+    section: string
+    name: string
+    professors: Professor[]
+    creditHours: number
+    openSeats: number
+    totalSeats: number
+    year: number
+    semester: string
+    times: Timeslot[]
+    isLab: boolean
+    isOpen: boolean
+    location: string
+}
+
+export interface DisplayCourse {
+    id: number
+    subject: string
+    code: number
+    section: string
+    name: string
+    professors: Professor[]
+    creditHours: number
+    openSeats: number
+    totalSeats: number
+    year: number
+    semester: string
+    times: Timeslot[]
+    isLab: boolean
+    isOpen: boolean
+    location: string
+}
+
+export interface SearchCalendarBarProps {
+  hasSearched: boolean;
+  setHasSearched: (value: boolean) => void;
+  setResults: (results: Course[]) => void;
+  mode: Mode;
+  setMode: (mode: Mode) => void;
+}

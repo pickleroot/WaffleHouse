@@ -1,109 +1,15 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Footer from "@/components/Footer.tsx"
-import { cn } from "@/lib/utils"
+import { cn, transformCourse, formatDay, formatTime, formatProfessorName, toMinutes } from "@/lib/utils"
+import type {BackendCourse, DisplayCourse} from "@/lib/types" 
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap, CheckCircle, AlertTriangle } from "lucide-react"
-import type { Professor, Timeslot } from "@/lib/types"
+import { getCourse, getSchedule, addCourseToSchedule, removeCourseFromSchedule } from "@/services/schedule"
+import { supabase } from "@/lib/supabase"
 
-interface BackendCourse {
-    id: number
-    subject: string
-    code: number
-    section: string
-    name: string
-    professors: Professor[]
-    creditHours: number
-    openSeats: number
-    totalSeats: number
-    year: number
-    semester: string
-    times: Timeslot[]
-    isLab: boolean
-    isOpen: boolean
-    location: string
-}
 
-interface DisplayCourse {
-    id: number
-    subject: string
-    code: number
-    section: string
-    name: string
-    professors: Professor[]
-    creditHours: number
-    openSeats: number
-    totalSeats: number
-    year: number
-    semester: string
-    times: Timeslot[]
-    isLab: boolean
-    isOpen: boolean
-    location: string
-}
-
-function transformCourse(data: BackendCourse): DisplayCourse {
-    return {
-        id: data.id,
-        subject: data.subject,
-        code: data.code,
-        section: data.section,
-        name: data.name,
-        professors: data.professors,
-        creditHours: data.creditHours,
-        openSeats: data.openSeats,
-        totalSeats: data.totalSeats,
-        year: data.year,
-        semester: data.semester,
-        times: data.times,
-        isLab: data.isLab,
-        isOpen: data.isOpen,
-        location: data.location,
-    }
-}
-
-function formatDay(day: string): string {
-    const days: Record<string, string> = {
-        "M": "Monday",
-        "T": "Tuesday",
-        "W": "Wednesday",
-        "TH": "Thursday",
-        "F": "Friday",
-        "SA": "Saturday",
-        "SU": "Sunday"
-    }
-    return days[day] || day
-}
-
-function formatTime(time: string | number[]): string {
-    let hours: number, minutes: number
-    if (Array.isArray(time)) {
-        [hours = 0, minutes = 0] = time
-    } else {
-        [hours, minutes] = time.split(":").map(Number)
-    }
-    const period = hours >= 12 ? "PM" : "AM"
-    const displayHours = hours % 12 || 12
-    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
-}
-
-function formatProfessorName(prof: Professor): string {
-    if (prof.firstName && prof.lastName) {
-        return `${prof.firstName} ${prof.lastName}`
-    }
-    return prof.firstName || prof.lastName || "Unknown Professor"
-}
-
-/** Convert a time value (array or string) to total minutes for overlap comparison */
-function toMinutes(time: number[] | string): number {
-    if (Array.isArray(time)) {
-        const [h = 0, m = 0] = time;
-        return h * 60 + m;
-    }
-    const [h = 0, m = 0] = time.split(":").map(Number);
-    return h * 60 + m;
-}
 
 /**
  * Returns all courses in the schedule that have a timeslot overlapping with
@@ -137,51 +43,55 @@ function getConflictingCourses(candidate: DisplayCourse, schedule: any[]): any[]
 }
 
 export default function Course() {
-    const navigate = useNavigate()
-    const params = useParams()
-    const [course, setCourse] = React.useState<DisplayCourse | null>(null)
-    const [schedule, setSchedule] = React.useState<any[]>([])
-    const [loading, setLoading] = React.useState(true)
-    const [error, setError] = React.useState<string | null>(null)
+    const navigate = useNavigate();
+    const params = useParams();
+
+    const [course, setCourse] = React.useState<DisplayCourse | null>(null);
+    const [schedule, setSchedule] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         const fetchData = async () => {
-            const courseId = params.id
+            const courseId = params.id;
+
             if (!courseId) {
-                setError("No course ID provided")
-                setLoading(false)
-                return
+                setError("No course ID provided");
+                setLoading(false);
+                return;
             }
 
             try {
-                // Fetch both the course and the user's schedule in parallel
-                const [courseRes, scheduleRes] = await Promise.all([
-                    fetch(`http://localhost:7001/course/${courseId}`),
-                    fetch("http://localhost:7001/schedule"),
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setError("User not authenticated");
+                    setLoading(false);
+                    return;
+                }
+
+                const [courseData, scheduleData] = await Promise.all([
+                    getCourse(courseId),
+                    getSchedule(user.id)
                 ]);
 
-                if (!courseRes.ok) {
-                    throw new Error(`Failed to fetch course: ${courseRes.status} ${courseRes.statusText}`)
-                }
+                // ✅ set course
+                setCourse(transformCourse(courseData));
 
-                const courseData: BackendCourse = await courseRes.json()
-                setCourse(transformCourse(courseData))
+                // ✅ set schedule
+                setSchedule(scheduleData);
 
-                if (scheduleRes.ok) {
-                    const scheduleData = await scheduleRes.json()
-                    setSchedule(scheduleData)
-                }
             } catch (err) {
-                console.error("Error fetching data:", err)
-                setError("Failed to load course details")
+                console.error("Error fetching data:", err);
+                setError("Failed to load course details");
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [params.id])
+        fetchData();
+    }, [params.id]);
 
+    // TODO: make sure that we save every search into state
     const handleBack = () => {
         navigate("/")
     }
@@ -189,26 +99,22 @@ export default function Course() {
     const handleAdd = async () => {
         if (!course) return;
         try {
-            const res = await fetch("http://localhost:7001/course", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(course),
-            });
-            if (!res.ok) {
-                console.error(`Failed to add course: ${res.status} ${res.statusText}`);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("User not authenticated");
                 return;
             }
-            const added: boolean = await res.json();
-            if (added) {
-                // Re-fetch both schedule (to flip isInSchedule) and the course itself
-                // (to get the updated openSeats from the backend)
-                const [scheduleRes, courseRes] = await Promise.all([
-                    fetch("http://localhost:7001/schedule"),
-                    fetch(`http://localhost:7001/course/${course.id}`),
-                ]);
-                if (scheduleRes.ok) setSchedule(await scheduleRes.json());
-                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
-            }
+
+            await addCourseToSchedule(user.id, String(course.id));
+
+            // Re-fetch both schedule and the course itself
+            // (to get the updated openSeats from the backend)
+            const [scheduleData, courseData] = await Promise.all([
+                getSchedule(user.id),
+                getCourse(String(course.id)),
+            ]);
+            setSchedule(scheduleData);
+            setCourse(transformCourse(courseData));
         } catch (err) {
             console.error("Error adding course:", err);
         }
@@ -217,26 +123,22 @@ export default function Course() {
     const handleRemove = async () => {
         if (!course) return;
         try {
-            const res = await fetch("http://localhost:7001/course", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(course),
-            });
-            if (!res.ok) {
-                console.error(`Failed to remove course: ${res.status} ${res.statusText}`);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("User not authenticated");
                 return;
             }
-            const removed: boolean = await res.json();
-            if (removed) {
-                // Re-fetch both schedule (to flip isInSchedule) and the course itself
-                // (to get the updated openSeats from the backend)
-                const [scheduleRes, courseRes] = await Promise.all([
-                    fetch("http://localhost:7001/schedule"),
-                    fetch(`http://localhost:7001/course/${course.id}`),
-                ]);
-                if (scheduleRes.ok) setSchedule(await scheduleRes.json());
-                if (courseRes.ok) setCourse(transformCourse(await courseRes.json()));
-            }
+
+            await removeCourseFromSchedule(user.id, String(course.id));
+
+            // Re-fetch both schedule and the course itself
+            // (to get the updated openSeats from the backend)
+            const [scheduleData, courseData] = await Promise.all([
+                getSchedule(user.id),
+                getCourse(String(course.id)),
+            ]);
+            setSchedule(scheduleData);
+            setCourse(transformCourse(courseData));
         } catch (err) {
             console.error("Error removing course:", err);
         }

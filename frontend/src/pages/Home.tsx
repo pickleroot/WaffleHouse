@@ -7,7 +7,6 @@ import type { CourseEvent } from "@/components/BigCalendar"
 import { DataTable } from "@/components/DataTable"
 import Footer from "@/components/Footer.tsx"
 import type { Mode, Course } from "@/lib/types"
-import { cn } from "@/lib/utils"
 import * as React from "react";
 import SearchCalendarBar from "@/components/SearchCalendarBar.tsx";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
@@ -30,6 +29,8 @@ function SidebarAutoOpen({ hasSearched, mode }: { hasSearched: boolean; mode: Mo
 import { AppSidebar } from "@/components/AppSidebar.tsx"
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { formatTime, toMinutes, cn} from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
 
 const QUOTES = [
     { text: "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding.", author: "Proverbs 9:10" },
@@ -41,18 +42,6 @@ const QUOTES = [
     { text: "The glory of God is a human being fully alive.", author: "Irenaeus of Lyon" },
     { text: "An educated mind is one that can entertain a thought without accepting it.", author: "Aristotle" },
 ]
-
-/** Format a LocalTime value (Jackson serializes as [hour, minute] or [hour, minute, second]) to "HH:MM:SS" */
-function formatTime(time: number[]): string {
-    const [h = 0, m = 0, s = 0] = time;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-/** Convert a LocalTime array [hour, minute, ...] to total minutes, for arithmetic comparison */
-function toMinutes(time: number[]): number {
-    const [h = 0, m = 0] = time;
-    return h * 60 + m;
-}
 
 /**
  * Returns true if the candidate course has a timeslot that overlaps with any
@@ -107,6 +96,30 @@ export default function Home() {
     const [schedule, setSchedule] = useState<any[]>([])
     const filterContainerRef = useRef<HTMLDivElement>(null)
     const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], [])
+
+    // Check authentication on mount and redirect to Auth page if not authenticated
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                navigate("/auth");
+            }
+        };
+        checkAuth();
+    }, [navigate]);
+
+    // Listen for auth state changes and redirect if logged out
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                navigate("/auth");
+            }
+        });
+
+        return () => {
+            subscription?.unsubscribe();
+        };
+    }, [navigate]);
 
     /**
      * Transient notification shown at the top of the page after save/load.
