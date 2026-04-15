@@ -68,6 +68,12 @@ export async function getSchedule(userId: string) {
   return data;
 }
 
+/**
+ * adds a course to a given schedule
+ * @param userId 
+ * @param courseId 
+ * @returns 
+ */
 export async function addCourseToSchedule(userId: string, courseId: string) {
   // Check authentication
   const { data: { session } } = await supabase.auth.getSession();
