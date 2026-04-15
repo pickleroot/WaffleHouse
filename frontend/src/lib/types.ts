@@ -32,3 +32,39 @@ export interface Course {
     isOpen: boolean
     location: string
 }
+
+export interface BackendCourse {
+    id: number
+    subject: string
+    code: number
+    section: string
+    name: string
+    professors: Professor[]
+    creditHours: number
+    openSeats: number
+    totalSeats: number
+    year: number
+    semester: string
+    times: Timeslot[]
+    isLab: boolean
+    isOpen: boolean
+    location: string
+}
+
+export interface DisplayCourse {
+    id: number
+    subject: string
+    code: number
+    section: string
+    name: string
+    professors: Professor[]
+    creditHours: number
+    openSeats: number
+    totalSeats: number
+    year: number
+    semester: string
+    times: Timeslot[]
+    isLab: boolean
+    isOpen: boolean
+    location: string
+}
