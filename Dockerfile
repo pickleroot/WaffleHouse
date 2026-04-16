@@ -9,6 +9,12 @@ WORKDIR /app/frontend
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
+ARG VITE_SUPABASE_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci || npm install
 
@@ -18,6 +24,7 @@ RUN npm run build
 # ========================================
 # Stage 2: Build the Java/Gradle Backend
 # ========================================
+
 FROM gradle:8.7-jdk21-alpine AS backend-builder
 
 WORKDIR /app/backend
@@ -31,6 +38,7 @@ RUN gradle installDist --no-daemon
 # ========================================
 # Stage 3: Final Runtime Image
 # ========================================
+
 FROM eclipse-temurin:21-jre-alpine
 
 # Install Nginx and supervisord (to run both processes)
