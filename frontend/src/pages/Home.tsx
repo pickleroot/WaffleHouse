@@ -14,6 +14,9 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { formatTime, toMinutes, cn} from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { getSchedule, addCourseToSchedule, removeCourseFromSchedule, getCourse } from "@/services/schedule"
+import { filterCourses } from "@/services/search"
+
 
 const QUOTES = [
     { text: "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding.", author: "Proverbs 9:10" },
@@ -56,6 +59,8 @@ function courseConflicts(candidate: any, schedule: any[]): boolean {
 
 /** Transform backend Course objects into CourseEvents for BigCalendar */
 function toEvents(courses: any[]): CourseEvent[] {
+    console.log(courses);
+
     return courses.flatMap((course) =>
         (course.times || []).map((slot: any) => ({
             daysOfWeek: [String(slot.day)],
@@ -114,14 +119,21 @@ export default function Home() {
         setTimeout(() => setToast(null), 3000);
     }, []);
 
-    const fetchSchedule = useCallback(() => {
-        fetch("http://localhost:7001/schedule")
-            .then((res) => res.json())
-            .then((data) => {
-                setSchedule(data);
-                setEvents(toEvents(data));
-            })
-            .catch((err) => console.error("Failed to fetch schedule:", err));
+    const fetchSchedule = useCallback(async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("User not authenticated");
+                return;
+            }
+            const data = await getSchedule(user.id);
+            // console.log(data);
+            setSchedule(data || []);
+            setEvents(toEvents(data || []));
+
+        } catch (err) {
+            console.error("Failed to fetch schedule:", err);
+        }
     }, []);
 
     /**
@@ -131,10 +143,27 @@ export default function Home() {
      */
     const refreshCourseInResults = useCallback(async (id: number) => {
         try {
-            const res = await fetch(`http://localhost:7001/course/${id}`);
-            if (!res.ok) return;
-            const updated = await res.json();
-            setResults(prev => prev.map(c => c.id === id ? updated : c));
+            const courseData = await getCourse(String(id));
+            // Transform the raw course data to match Course type
+            const year = parseInt((courseData as any).semester.split('_')[0], 10);
+            const updatedCourse: Course = {
+                id: (courseData as any).id,
+                subject: (courseData as any).subject,
+                code: (courseData as any).course_number,
+                section: (courseData as any).section,
+                name: (courseData as any).name,
+                professors: (courseData as any).faculty ? [{ firstName: (courseData as any).faculty, lastName: "" }] : [],
+                creditHours: (courseData as any).credits,
+                openSeats: (courseData as any).open_seats,
+                totalSeats: (courseData as any).total_seats,
+                year,
+                semester: (courseData as any).semester,
+                times: (courseData as any).times || [],
+                isLab: (courseData as any).is_lab,
+                isOpen: (courseData as any).is_open,
+                location: (courseData as any).location,
+            };
+            setResults(prev => prev.map(c => c.id === id ? updatedCourse : c));
         } catch (err) {
             console.error("Failed to refresh course in results:", err);
         }
@@ -177,24 +206,15 @@ export default function Home() {
      */
     const handleRemove = useCallback(async (course: any) => {
         try {
-            const res = await fetch("http://localhost:7001/course", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(course),
-            });
-            if (!res.ok) {
-                const body = await res.text();
-                console.error(`Failed to remove course: ${res.status} ${res.statusText}`, body);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("User not authenticated");
                 return;
             }
-            const removed: boolean = await res.json();
-            if (removed) {
-                console.log("Course removed successfully:", course.name);
-                fetchSchedule();
-                refreshCourseInResults(course.id);
-            } else {
-                console.warn("Course was not removed (not in schedule?):", course.name);
-            }
+            await removeCourseFromSchedule(user.id, String(course.id));
+            console.log("Course removed successfully:", course.name);
+            fetchSchedule();
+            refreshCourseInResults(course.id);
         } catch (err) {
             console.error("Error removing course:", err);
         }
@@ -332,24 +352,15 @@ export default function Home() {
                         size="sm"
                         onClick={async () => {
                             try {
-                                const res = await fetch("http://localhost:7001/course", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify(course),
-                                });
-                                if (!res.ok) {
-                                    const body = await res.text();
-                                    console.error(`Failed to add course: ${res.status} ${res.statusText}`, body);
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) {
+                                    console.error("User not authenticated");
                                     return;
                                 }
-                                const added: boolean = await res.json();
-                                if (added) {
-                                    console.log("Course added successfully:", course.name);
-                                    fetchSchedule();
-                                    refreshCourseInResults(course.id);
-                                } else {
-                                    console.warn("Course was not added (already in schedule?):", course.name);
-                                }
+                                await addCourseToSchedule(user.id, String(course.id));
+                                console.log("Course added successfully:", course.name);
+                                fetchSchedule();
+                                refreshCourseInResults(course.id);
                             } catch (err) {
                                 console.error("Error adding course:", err);
                             }
@@ -439,27 +450,16 @@ export default function Home() {
             if (endTime)   time.end_time   = endTime.split(":").map(Number);
         }
 
-        const postData = {
-            semester: getString("semester"),
-            name:     getString("name"),
-            prof:     getString("prof"),
-            dept:     getString("dept"),
-            credits:  getString("credits"),
-            year:     getString("year"),
-            time,
-        };
-
         try {
-            const res = await fetch(`http://localhost:7001/filters`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(postData),
+            const filterRes = await filterCourses({
+                semester: getString("semester"),
+                name: getString("name"),
+                prof: getString("prof"),
+                dept: getString("dept"),
+                credits: getString("credits"),
+                year: getString("year"),
+                time: time as any,
             });
-            if (!res.ok) {
-                console.error(`Filter failed: ${res.status} ${res.statusText}`);
-                return;
-            }
-            const filterRes: Course[] = await res.json();
             setResults(filterRes);
         } catch (err) {
             console.error("Filter error:", err);

@@ -3,12 +3,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {useNavigate} from "react-router-dom";
 
 export default function Auth() {
     const [loading, setLoading] = useState<boolean>(false);
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [hasAccount, setHasAccount] = useState<boolean>(false);
+    const navigate = useNavigate();
+
 
     const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -21,7 +24,9 @@ export default function Auth() {
         if (error) {
             alert(error.message);
         } else {
-            alert(hasAccount ? 'Check your email for the confirmation link!' : 'Logged in successfully!');
+            // alert(hasAccount ? 'Check your email for the confirmation link!' : 'Logged in successfully!');
+            navigate("/");
+          
         }
         setLoading(false);
     };
