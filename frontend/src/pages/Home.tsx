@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { formatTime, toMinutes, cn} from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { downloadScheduleIcs } from "@/lib/ical"
 import { getSchedule, addCourseToSchedule, removeCourseFromSchedule, getCourse } from "@/services/schedule"
 import { filterCourses } from "@/services/search"
 
@@ -81,7 +82,7 @@ export default function Home() {
     const [hasSearched, setHasSearched] = useState(false)
     const [mode, setMode] = useState<Mode>("search")
     const [events, setEvents] = useState<CourseEvent[]>([])
-    const [schedule, setSchedule] = useState<any[]>([])
+    const [schedule, setSchedule] = useState<Course[]>([])
     const filterFormRef = useRef<HTMLFormElement>(null)
     const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], [])
 
@@ -496,6 +497,19 @@ export default function Home() {
                 />
                 <div className="ml-auto flex items-center gap-2">
                     {/* Save and Load buttons persist the schedule to/from disk via the backend */}
+                    {mode === "calendar" && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={schedule.length === 0}
+                            onClick={() => {
+                                downloadScheduleIcs(schedule);
+                                showToast("Schedule exported as iCal.", true);
+                            }}
+                        >
+                            Export iCal
+                        </Button>
+                    )}
                     <Button
                         variant="outline"
                         size="sm"
