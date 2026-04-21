@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Footer from "@/components/layout/Footer.tsx"
 import { cn, transformCourse, formatDay, formatTime, formatProfessorName, toMinutes } from "@/lib/utils"
-import type {BackendCourse, DisplayCourse} from "@/lib/types" 
+import type { Course } from "@/lib/types"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Clock, BookOpen, Users, MapPin, Calendar, GraduationCap, CheckCircle, AlertTriangle } from "lucide-react"
@@ -15,7 +15,7 @@ import { supabase } from "@/lib/supabase"
  * Returns all courses in the schedule that have a timeslot overlapping with
  * the candidate course. Used to show the user which specific courses conflict.
  */
-function getConflictingCourses(candidate: DisplayCourse, schedule: any[]): any[] {
+function getConflictingCourses(candidate: Course, schedule: any[]): any[] {
     const conflicts: any[] = [];
     for (const scheduled of schedule) {
         // Don't flag the course as conflicting with itself
@@ -46,7 +46,7 @@ export default function Course() {
     const navigate = useNavigate();
     const params = useParams();
 
-    const [course, setCourse] = React.useState<DisplayCourse | null>(null);
+    const [course, setCourse] = React.useState<Course | null>(null);
     const [schedule, setSchedule] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
