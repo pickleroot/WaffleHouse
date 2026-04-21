@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import Footer from "@/components/Footer.tsx"
+import Footer from "@/components/layout/Footer.tsx"
 import { cn, transformCourse, formatDay, formatTime, formatProfessorName, toMinutes } from "@/lib/utils"
 import type {BackendCourse, DisplayCourse} from "@/lib/types" 
 import * as React from "react"

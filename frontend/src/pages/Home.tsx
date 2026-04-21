@@ -2,14 +2,14 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import BigCalendar from "@/components/BigCalendar"
-import type { CourseEvent } from "@/components/BigCalendar"
-import { DataTable } from "@/components/DataTable"
-import Footer from "@/components/Footer.tsx"
+import BigCalendar from "@/components/calendar/BigCalendar"
+import type { CourseEvent } from "@/components/calendar/BigCalendar"
+import { DataTable } from "@/components/data/DataTable"
+import Footer from "@/components/layout/Footer.tsx"
 import type { Mode, Course } from "@/lib/types"
 import * as React from "react";
-import SearchCalendarBar from "@/components/SearchCalendarBar.tsx";
-import FilterGroup from "@/components/FilterGroup.tsx";
+import SearchCalendarBar from "@/components/search/SearchCalendarBar.tsx";
+import FilterGroup from "@/components/search/FilterGroup.tsx";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { formatTime, toMinutes, cn} from "@/lib/utils"

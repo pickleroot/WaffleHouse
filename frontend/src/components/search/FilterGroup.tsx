@@ -4,7 +4,7 @@
  */
 
 import { Input } from "@/components/ui/input"
-// import RangeInput from "@/components/RangeInput.tsx";
+// import RangeInput from "@/components/inputs/RangeInput.tsx";
 // import {
 //     Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput,
 //     ComboboxContent,
