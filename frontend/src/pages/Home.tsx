@@ -12,69 +12,15 @@ import SearchCalendarBar from "@/components/search/SearchCalendarBar.tsx";
 import FilterGroup from "@/components/search/FilterGroup.tsx";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
-import { formatTime, toMinutes, cn} from "@/lib/utils"
+import { formatTime, cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { downloadScheduleIcs } from "@/lib/ical"
+import { QUOTES } from "@/lib/quotes"
+import { courseConflicts } from "@/lib/conflicts"
+import { toEvents } from "@/lib/courseEvents"
 import { getSchedule, addCourseToSchedule, removeCourseFromSchedule, getCourse } from "@/services/schedule"
 import { filterCourses } from "@/services/search"
 
-
-const QUOTES = [
-    { text: "The fear of the Lord is the beginning of wisdom, and knowledge of the Holy One is understanding.", author: "Proverbs 9:10" },
-    { text: "Education is simply the soul of a society as it passes from one generation to another.", author: "G.K. Chesterton" },
-    { text: "The task of the modern educator is not to cut down jungles, but to irrigate deserts.", author: "C.S. Lewis" },
-    { text: "All truth is God's truth.", author: "Augustine of Hippo" },
-    { text: "The heart cannot delight in what the mind does not regard as true.", author: "J. Gresham Machen" },
-    { text: "Education without values, as useful as it is, seems rather to make man a more clever devil.", author: "C.S. Lewis" },
-    { text: "The glory of God is a human being fully alive.", author: "Irenaeus of Lyon" },
-    { text: "An educated mind is one that can entertain a thought without accepting it.", author: "Aristotle" },
-]
-
-/**
- * Returns true if the candidate course has a timeslot that overlaps with any
- * timeslot of any course already in the schedule.
- *
- * Two timeslots overlap if they share a day AND one starts before the other ends:
- *   A overlaps B  iff  A.start < B.end  &&  A.end > B.start
- *
- * NOTE: callers are responsible for excluding the candidate from the schedule
- * before calling this, otherwise a course will appear to conflict with itself.
- */
-function courseConflicts(candidate: any, schedule: any[]): boolean {
-    for (const scheduled of schedule) {
-        for (const candidateSlot of (candidate.times || [])) {
-            for (const scheduledSlot of (scheduled.times || [])) {
-                if (String(candidateSlot.day) !== String(scheduledSlot.day)) continue;
-
-                const candStart  = toMinutes(candidateSlot.start_time);
-                const candEnd    = toMinutes(candidateSlot.end_time);
-                const schedStart = toMinutes(scheduledSlot.start_time);
-                const schedEnd   = toMinutes(scheduledSlot.end_time);
-
-                if (candStart < schedEnd && candEnd > schedStart) return true;
-            }
-        }
-    }
-    return false;
-}
-
-/** Transform backend Course objects into CourseEvents for BigCalendar */
-function toEvents(courses: any[]): CourseEvent[] {
-    console.log(courses);
-
-    return courses.flatMap((course) =>
-        (course.times || []).map((slot: any) => ({
-            daysOfWeek: [String(slot.day)],
-            startTime: Array.isArray(slot.start_time) ? formatTime(slot.start_time) : String(slot.start_time),
-            endTime: Array.isArray(slot.end_time) ? formatTime(slot.end_time) : String(slot.end_time),
-            courseName: course.name,
-            courseCode: String(course.code),
-            courseDepartment: course.subject,
-            courseSection: typeof course.section === 'string' ? course.section : String.fromCharCode(course.section),
-            courseLocation: course.location || '',
-        }))
-    );
-}
 
 export default function Home() {
     const navigate = useNavigate()
