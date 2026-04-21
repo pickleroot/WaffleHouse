@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import type { Mode, Course } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { searchCourses } from "@/services/search"
+import { cn, formatSemester, sortSemestersDescending } from "@/lib/utils";
+import { searchCourses, getSemesters } from "@/services/search"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 
 
 interface SearchCalendarBarProps {
@@ -12,8 +13,19 @@ interface SearchCalendarBarProps {
   setMode: (mode: Mode) => void;
 }
 
+// Fallback list if the database call fails or returns nothing.
+const FALLBACK_SEMESTERS = [
+    "2026_Spring",
+    "2025_Fall",
+    "2025_Summer",
+    "2025_Spring",
+    "2024_Fall",
+];
+
 export default function SearchCalendarBar({ hasSearched, setHasSearched, setResults, mode, setMode }: SearchCalendarBarProps) {
     const [query, setQuery] = useState("")
+    const [semesters, setSemesters] = useState<string[]>([])
+    const [selectedSemester, setSelectedSemester] = useState<string>("")
     const inputRef = useRef<HTMLInputElement>(null)
 
     // Focus input when switching to search mode
@@ -24,13 +36,34 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
         }
     }, [mode])
 
+    // Load semesters once on mount; default to the most recent.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const fetched = await getSemesters();
+                const sorted = sortSemestersDescending(fetched.length > 0 ? fetched : FALLBACK_SEMESTERS);
+                if (cancelled) return;
+                setSemesters(sorted);
+                if (sorted.length > 0) setSelectedSemester(sorted[0]);
+            } catch (err) {
+                console.error("Failed to load semesters:", err);
+                const sorted = sortSemestersDescending(FALLBACK_SEMESTERS);
+                if (cancelled) return;
+                setSemesters(sorted);
+                setSelectedSemester(sorted[0]);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [])
+
     const handleSearch = async (e: React.SubmitEvent) => {
         e.preventDefault();
 
         if (!query.trim()) return;
 
         try {
-            const results = await searchCourses(query);
+            const results = await searchCourses(query, selectedSemester || null);
             setResults(results);
             setHasSearched(true);
         } catch (err) {
@@ -42,8 +75,26 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <form
                 onSubmit={handleSearch}
-                className="pointer-events-auto mt-10"
+                className="pointer-events-auto mt-10 flex items-center gap-3"
             >
+                {/*
+                  Semester selector — sits to the left of the search/calendar toggle.
+                  Always visible so the user knows which semester they are searching in.
+                */}
+                <NativeSelect
+                    size="sm"
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    aria-label="Semester"
+                    disabled={semesters.length === 0}
+                >
+                    {semesters.map((s) => (
+                        <NativeSelectOption key={s} value={s}>
+                            {formatSemester(s)}
+                        </NativeSelectOption>
+                    ))}
+                </NativeSelect>
+
                 {/*
                   Single container with border-b-2.
                   The underline shrinks/grows as content inside transitions.

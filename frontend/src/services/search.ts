@@ -40,7 +40,29 @@ function transformRawCourse(raw: RawCourseData): Course {
     };
 }
 
-export async function searchCourses(query: string): Promise<Course[]> {
+export async function getSemesters(): Promise<string[]> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        throw new Error("User is not authenticated");
+    }
+
+    const { data, error } = await supabase
+        .from('courses')
+        .select('semester');
+
+    if (error) {
+        console.error(`Failed to load semesters: ${error.message}`);
+        return [];
+    }
+
+    const unique = new Set<string>();
+    (data as { semester: string }[]).forEach(row => {
+        if (row.semester) unique.add(row.semester);
+    });
+    return Array.from(unique);
+}
+
+export async function searchCourses(query: string, semester?: string | null): Promise<Course[]> {
     if (!query.trim()) {
         return [];
     }
@@ -52,10 +74,16 @@ export async function searchCourses(query: string): Promise<Course[]> {
     }
 
     try {
-        const { data, error } = await supabase
+        let builder = supabase
             .from('courses')
             .select('*')
             .or(`name.ilike.%${query}%,subject.ilike.%${query}%`);
+
+        if (semester) {
+            builder = builder.eq('semester', semester);
+        }
+
+        const { data, error } = await builder;
 
         if (error) {
             console.error(`Search failed: ${error.message}`);
