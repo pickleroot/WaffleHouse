@@ -1,13 +1,13 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Professor, Timeslot, BackendCourse, DisplayCourse } from "@/lib/types"
+import type { Professor, Course } from "@/lib/types"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 
-export function transformCourse(data: BackendCourse): DisplayCourse {
+export function transformCourse(data: any): Course {
     return {
         id: data.id,
         subject: data.subject,
