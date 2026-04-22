@@ -1,18 +1,25 @@
 import { useState, useRef, useEffect } from "react";
-import type { Mode, Course } from "@/lib/types";
+import type { Mode } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { searchCourses } from "@/services/search"
+// --- infinite-scroll change ---
+// No longer calls searchCourses() — that's done inside useInfiniteQuery in
+// Home.tsx. This component now only *declares intent*: it hands up the
+// search query via setSearchParams and the hook handles fetching/pagination.
+import type { SearchParams } from "@/hooks/useCourseSearch"
+// --- /infinite-scroll change ---
 
 
 interface SearchCalendarBarProps {
   hasSearched: boolean;
   setHasSearched: (value: boolean) => void;
-  setResults: (results: Course[]) => void;
+  // --- infinite-scroll change ---
+  setSearchParams: (params: SearchParams) => void;
+  // --- /infinite-scroll change ---
   mode: Mode;
   setMode: (mode: Mode) => void;
 }
 
-export default function SearchCalendarBar({ hasSearched, setHasSearched, setResults, mode, setMode }: SearchCalendarBarProps) {
+export default function SearchCalendarBar({ hasSearched, setHasSearched, setSearchParams, mode, setMode }: SearchCalendarBarProps) {
     const [query, setQuery] = useState("")
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -29,13 +36,13 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
 
         if (!query.trim()) return;
 
-        try {
-            const results = await searchCourses(query);
-            setResults(results);
-            setHasSearched(true);
-        } catch (err) {
-            console.error("Search error:", err);
-        }
+        // --- infinite-scroll change ---
+        // Just publish the search params. The hook re-keys on this value and
+        // fetches page 0; subsequent pages come from the IntersectionObserver
+        // in SearchResultsView.
+        setSearchParams({ kind: "search", query });
+        setHasSearched(true);
+        // --- /infinite-scroll change ---
     };
 
     return (

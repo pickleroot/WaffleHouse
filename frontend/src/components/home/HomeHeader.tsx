@@ -3,11 +3,16 @@ import ScheduleActions from "@/components/home/ScheduleActions"
 import UserAvatarButton from "@/components/home/UserAvatarButton"
 import type { Mode, Course } from "@/lib/types"
 import type { CourseEvent } from "@/components/calendar/BigCalendar"
+// --- infinite-scroll change ---
+import type { SearchParams } from "@/hooks/useCourseSearch"
+// --- /infinite-scroll change ---
 
 interface HomeHeaderProps {
     hasSearched: boolean
     setHasSearched: (v: boolean) => void
-    setResults: (results: Course[]) => void
+    // --- infinite-scroll change ---
+    setSearchParams: (params: SearchParams) => void
+    // --- /infinite-scroll change ---
     mode: Mode
     setMode: (mode: Mode) => void
     schedule: Course[]
@@ -22,7 +27,7 @@ export default function HomeHeader(props: HomeHeaderProps) {
             <SearchCalendarBar
                 hasSearched={props.hasSearched}
                 setHasSearched={props.setHasSearched}
-                setResults={props.setResults}
+                setSearchParams={props.setSearchParams}
                 mode={props.mode}
                 setMode={props.setMode}
             />

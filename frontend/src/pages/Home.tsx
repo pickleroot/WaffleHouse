@@ -11,6 +11,13 @@ import {
 import { useAuthRedirect } from "@/hooks/useAuthRedirect"
 import { useToast } from "@/hooks/useToast"
 import { useSchedule } from "@/hooks/useSchedule"
+// --- infinite-scroll change ---
+// Replaces local `results` state + manual single-course refresh. The hook
+// owns paginated fetching via useInfiniteQuery; the cache updater splices
+// refreshed course rows into every loaded page so openSeats reflects the
+// latest add/remove without re-fetching.
+import { useCourseSearch, useUpdateCourseInCache, type SearchParams } from "@/hooks/useCourseSearch"
+// --- /infinite-scroll change ---
 import Footer from "@/components/layout/Footer"
 import Toast from "@/components/home/Toast"
 import HomeHeader from "@/components/home/HomeHeader"
@@ -24,17 +31,36 @@ export default function Home() {
     const navigate = useNavigate()
     useAuthRedirect()
 
-    const [results, setResults] = useState<Course[]>([])
+    // --- infinite-scroll change ---
+    // searchParams replaces the old `results` array. When it changes, react-query
+    // re-keys and fetches page 0; the hook handles every subsequent page.
+    const [searchParams, setSearchParams] = useState<SearchParams>(null)
     const [hasSearched, setHasSearched] = useState(false)
     const [mode, setMode] = useState<Mode>("search")
+
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useCourseSearch(searchParams)
+
+    // Flatten the paged data into a single array for the table / conflict logic.
+    const results = useMemo<Course[]>(
+        () => data?.pages.flatMap((p) => p.courses) ?? [],
+        [data],
+    )
+
+    const updateCourseInCache = useUpdateCourseInCache()
+    // --- /infinite-scroll change ---
 
     const { toast, showToast } = useToast()
     const { schedule, events, setSchedule, setEvents, fetchSchedule } = useSchedule()
 
     /**
-     * Fetch a single course by ID and replace its entry in `results` state.
+     * Fetch a single course by ID and replace its entry in the cached pages.
      * Called after add/remove so that openSeats updates in the search table
-     * without needing to re-run the entire search query.
+     * without re-fetching the entire paginated result set.
      */
     const refreshCourseInResults = useCallback(async (id: number) => {
         try {
@@ -57,11 +83,13 @@ export default function Home() {
                 isOpen: (courseData as any).is_open,
                 location: (courseData as any).location,
             };
-            setResults(prev => prev.map(c => c.id === id ? updatedCourse : c));
+            // --- infinite-scroll change ---
+            updateCourseInCache(updatedCourse);
+            // --- /infinite-scroll change ---
         } catch (err) {
             console.error("Failed to refresh course in results:", err);
         }
-    }, []);
+    }, [updateCourseInCache]);
 
     /**
      * IDs of courses already in the user's schedule.
@@ -148,7 +176,9 @@ export default function Home() {
             <HomeHeader
                 hasSearched={hasSearched}
                 setHasSearched={setHasSearched}
-                setResults={setResults}
+                // --- infinite-scroll change ---
+                setSearchParams={setSearchParams}
+                // --- /infinite-scroll change ---
                 mode={mode}
                 setMode={setMode}
                 schedule={schedule}
@@ -163,8 +193,13 @@ export default function Home() {
                 {mode === "search" && hasSearched && (
                     <SearchResultsView
                         columns={searchColumns}
-                        results={results}
-                        setResults={setResults}
+                        // --- infinite-scroll change ---
+                        courses={results}
+                        setSearchParams={setSearchParams}
+                        fetchNextPage={fetchNextPage}
+                        hasNextPage={!!hasNextPage}
+                        isFetchingNextPage={isFetchingNextPage}
+                        // --- /infinite-scroll change ---
                     />
                 )}
 

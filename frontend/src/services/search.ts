@@ -17,6 +17,23 @@ interface RawCourseData {
     location: string
 }
 
+// --- infinite-scroll change ---
+// Shared pagination input + page-shaped return type.
+// `hasMore` is based on raw row count (not filtered), so time-based client
+// filtering in filterCourses doesn't confuse the infinite-scroll terminator.
+export interface PaginationOpts {
+    offset?: number
+    limit?: number
+}
+
+export interface SearchPage {
+    courses: Course[]
+    hasMore: boolean
+}
+
+export const DEFAULT_PAGE_SIZE = 25
+// --- /infinite-scroll change ---
+
 function transformRawCourse(raw: RawCourseData): Course {
     // Extract year from semester (e.g., "2025_Spring" -> 2025)
     const year = parseInt(raw.semester.split('_')[0], 10);
@@ -40,12 +57,47 @@ function transformRawCourse(raw: RawCourseData): Course {
     };
 }
 
-export async function searchCourses(query: string): Promise<Course[]> {
+async function attachTimes(courses: Course[]): Promise<void> {
+    if (courses.length === 0) return;
+    const courseIds = courses.map(c => c.id);
+    const { data: timesData, error: timesError } = await supabase
+        .from('course_times')
+        .select('*')
+        .in('course_id', courseIds);
+
+    if (timesError || !timesData) return;
+
+    const timesMap = new Map<number, any[]>();
+    (timesData as any[]).forEach(time => {
+        if (!timesMap.has(time.course_id)) timesMap.set(time.course_id, []);
+        timesMap.get(time.course_id)!.push(time);
+    });
+
+    courses.forEach(course => {
+        const slots = timesMap.get(course.id) || [];
+        course.times = slots.map(t => ({
+            day: t.day,
+            start_time: t.start_time,
+            end_time: t.end_time,
+        }));
+    });
+}
+
+// --- infinite-scroll change ---
+// Now accepts PaginationOpts and returns SearchPage instead of Course[].
+// Uses `.order('id')` so that `.range()` produces stable, non-overlapping
+// pages across calls (Postgres doesn't guarantee row order without ORDER BY).
+export async function searchCourses(
+    query: string,
+    opts: PaginationOpts = {}
+): Promise<SearchPage> {
+    const offset = opts.offset ?? 0;
+    const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
+
     if (!query.trim()) {
-        return [];
+        return { courses: [], hasMore: false };
     }
 
-    // Check authentication
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         throw new Error("User is not authenticated");
@@ -55,51 +107,26 @@ export async function searchCourses(query: string): Promise<Course[]> {
         const { data, error } = await supabase
             .from('courses')
             .select('*')
-            .or(`name.ilike.%${query}%,subject.ilike.%${query}%`);
+            .or(`name.ilike.%${query}%,subject.ilike.%${query}%`)
+            .order('id', { ascending: true })
+            .range(offset, offset + limit - 1);
 
         if (error) {
             console.error(`Search failed: ${error.message}`);
-            return [];
+            return { courses: [], hasMore: false };
         }
 
-        // Fetch course times for all returned courses
-        const courses = (data as RawCourseData[]).map(transformRawCourse);
-        const courseIds = courses.map(c => c.id);
+        const raw = data as RawCourseData[];
+        const courses = raw.map(transformRawCourse);
+        await attachTimes(courses);
 
-        if (courseIds.length > 0) {
-            const { data: timesData, error: timesError } = await supabase
-                .from('course_times')
-                .select('*')
-                .in('course_id', courseIds);
-
-            if (!timesError && timesData) {
-                // Map times to their respective courses
-                const timesMap = new Map<number, typeof timesData>();
-                (timesData as any[]).forEach(time => {
-                    if (!timesMap.has(time.course_id)) {
-                        timesMap.set(time.course_id, []);
-                    }
-                    timesMap.get(time.course_id)!.push(time);
-                });
-
-                // Attach times to courses
-                courses.forEach(course => {
-                    const courseTimes = timesMap.get(course.id) || [];
-                    course.times = courseTimes.map(t => ({
-                        day: t.day,
-                        start_time: t.start_time,
-                        end_time: t.end_time
-                    }));
-                });
-            }
-        }
-
-        return courses;
+        return { courses, hasMore: raw.length === limit };
     } catch (err) {
         console.error("Search error:", err);
         throw err;
     }
 }
+// --- /infinite-scroll change ---
 
 export interface FilterParams {
     semester?: string | null;
@@ -115,8 +142,17 @@ export interface FilterParams {
     } | null;
 }
 
-export async function filterCourses(filters: FilterParams): Promise<Course[]> {
-    // Check authentication
+// --- infinite-scroll change ---
+// Same pagination shape as searchCourses. `hasMore` is derived from the raw
+// Supabase row count *before* the client-side time filter, since the time
+// filter can drop rows but that doesn't mean we've exhausted the result set.
+export async function filterCourses(
+    filters: FilterParams,
+    opts: PaginationOpts = {}
+): Promise<SearchPage> {
+    const offset = opts.offset ?? 0;
+    const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         throw new Error("User is not authenticated");
@@ -125,91 +161,55 @@ export async function filterCourses(filters: FilterParams): Promise<Course[]> {
     try {
         let query = supabase.from('courses').select('*');
 
-        // Build base query with simple filters
-        if (filters.dept) {
-            query = query.eq('subject', filters.dept.toUpperCase());
-        }
-        if (filters.semester) {
-            query = query.eq('semester', filters.semester);
-        }
-        if (filters.credits) {
-            query = query.eq('credits', parseInt(filters.credits, 10));
-        }
+        if (filters.dept)     query = query.eq('subject', filters.dept.toUpperCase());
+        if (filters.semester) query = query.eq('semester', filters.semester);
+        if (filters.credits)  query = query.eq('credits', parseInt(filters.credits, 10));
         if (filters.year) {
             const yearStr = parseInt(filters.year, 10).toString();
             query = query.ilike('semester', `${yearStr}%`);
         }
-        if (filters.name) {
-            query = query.ilike('name', `%${filters.name}%`);
-        }
-        if (filters.prof) {
-            query = query.ilike('faculty', `%${filters.prof}%`);
-        }
+        if (filters.name) query = query.ilike('name', `%${filters.name}%`);
+        if (filters.prof) query = query.ilike('faculty', `%${filters.prof}%`);
 
-        const { data, error } = await query;
+        const { data, error } = await query
+            .order('id', { ascending: true })
+            .range(offset, offset + limit - 1);
 
         if (error) {
             console.error(`Filter failed: ${error.message}`);
-            return [];
+            return { courses: [], hasMore: false };
         }
 
-        // Transform courses
-        let courses = (data as RawCourseData[]).map(transformRawCourse);
-        const courseIds = courses.map(c => c.id);
+        const raw = data as RawCourseData[];
+        let courses = raw.map(transformRawCourse);
+        await attachTimes(courses);
 
-        // Fetch course times
-        if (courseIds.length > 0) {
-            const { data: timesData, error: timesError } = await supabase
-                .from('course_times')
-                .select('*')
-                .in('course_id', courseIds);
-
-            if (!timesError && timesData) {
-                const timesMap = new Map<number, typeof timesData>();
-                (timesData as any[]).forEach(time => {
-                    if (!timesMap.has(time.course_id)) {
-                        timesMap.set(time.course_id, []);
+        if (filters.time) {
+            courses = courses.filter(course =>
+                course.times.some(slot => {
+                    if (filters.time?.day && String(slot.day) !== String(filters.time.day)) {
+                        return false;
                     }
-                    timesMap.get(time.course_id)!.push(time);
-                });
-
-                courses.forEach(course => {
-                    const courseTimes = timesMap.get(course.id) || [];
-                    course.times = courseTimes.map(t => ({
-                        day: t.day,
-                        start_time: t.start_time,
-                        end_time: t.end_time
-                    }));
-                });
-
-                // Apply time filters if specified
-                if (filters.time) {
-                    courses = courses.filter(course => {
-                        return course.times.some(slot => {
-                            if (filters.time?.day && String(slot.day) !== String(filters.time.day)) {
-                                return false;
-                            }
-                            if (filters.time?.start_time && filters.time?.end_time) {
-                                const slotStart = Array.isArray(slot.start_time) 
-                                    ? slot.start_time[0] * 60 + slot.start_time[1]
-                                    : 0;
-                                const filterStart = filters.time.start_time[0] * 60 + filters.time.start_time[1];
-                                const slotEnd = Array.isArray(slot.end_time)
-                                    ? slot.end_time[0] * 60 + slot.end_time[1]
-                                    : 24 * 60;
-                                const filterEnd = filters.time.end_time[0] * 60 + filters.time.end_time[1];
-                                return slotStart >= filterStart && slotEnd <= filterEnd;
-                            }
-                            return true;
-                        });
-                    });
-                }
-            }
+                    if (filters.time?.start_time && filters.time?.end_time) {
+                        const slotStart = Array.isArray(slot.start_time)
+                            ? slot.start_time[0] * 60 + slot.start_time[1]
+                            : 0;
+                        const filterStart = filters.time.start_time[0] * 60 + filters.time.start_time[1];
+                        const slotEnd = Array.isArray(slot.end_time)
+                            ? slot.end_time[0] * 60 + slot.end_time[1]
+                            : 24 * 60;
+                        const filterEnd = filters.time.end_time[0] * 60 + filters.time.end_time[1];
+                        return slotStart >= filterStart && slotEnd <= filterEnd;
+                    }
+                    return true;
+                })
+            );
         }
 
-        return courses;
+        return { courses, hasMore: raw.length === limit };
     } catch (err) {
         console.error("Filter error:", err);
         throw err;
     }
 }
+// --- /infinite-scroll change ---
