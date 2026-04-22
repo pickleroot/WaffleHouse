@@ -1,15 +1,14 @@
 /**
- * Filters sidebar. Owns the filter form state (uncontrolled via ref) and
- * triggers re-queries through `setResults` whenever a field changes.
+ * Filters sidebar. Owns the filter state and triggers re-queries through
+ * `setResults` whenever a field changes.
  *
  * @author Ina Tang
  */
 
 import * as React from "react"
-import { useRef } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { Course } from "@/lib/types"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import {
     Sidebar,
     SidebarContent,
@@ -19,120 +18,243 @@ import {
     SidebarGroupLabel,
     SidebarHeader,
 } from "@/components/ui/sidebar"
-import { filterCourses } from "@/services/search"
+import { Slider } from "@/components/ui/slider"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+    Combobox,
+    ComboboxChip,
+    ComboboxChips,
+    ComboboxChipsInput,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+    ComboboxValue,
+} from "@/components/ui/combobox"
+import { fetchFilterOptions, filterCourses, type FilterParams } from "@/services/search"
 
 interface FiltersSidebarProps {
     setResults: (results: Course[]) => void
 }
 
+const CREDITS_MIN = 0
+const CREDITS_MAX = 4
+const DAYS: { value: string; label: string }[] = [
+    { value: "M", label: "M" },
+    { value: "T", label: "T" },
+    { value: "W", label: "W" },
+    { value: "R", label: "R" },
+    { value: "F", label: "F" },
+]
+
 function FiltersSidebarInner({ setResults }: FiltersSidebarProps) {
-    const formRef = useRef<HTMLFormElement>(null)
+    const [year, setYear] = useState("")
+    const [semester, setSemester] = useState("")
+    const [dept, setDept] = useState<string | null>(null)
+    const [name, setName] = useState("")
+    const [credits, setCredits] = useState<[number, number]>([CREDITS_MIN, CREDITS_MAX])
+    const [days, setDays] = useState<string[]>([])
+    const [startTime, setStartTime] = useState("")
+    const [endTime, setEndTime] = useState("")
+    const [profs, setProfs] = useState<string[]>([])
 
-    const submitFilters = async () => {
-        if (!formRef.current) return
-        const formData = new FormData(formRef.current)
+    const [subjectOptions, setSubjectOptions] = useState<string[]>([])
+    const [facultyOptions, setFacultyOptions] = useState<string[]>([])
 
-        const getString = (name: string): string | null => {
-            const val = formData.get(name)
-            return val && String(val).trim() ? String(val).trim() : null
+    useEffect(() => {
+        let cancelled = false
+        fetchFilterOptions().then(({ subjects, faculty }) => {
+            if (cancelled) return
+            setSubjectOptions(subjects)
+            setFacultyOptions(faculty)
+        }).catch(err => console.error("Failed to load filter options:", err))
+        return () => { cancelled = true }
+    }, [])
+
+    const params: FilterParams = useMemo(() => {
+        const creditsFilter = credits[0] === CREDITS_MIN && credits[1] === CREDITS_MAX
+            ? null
+            : { min: credits[0], max: credits[1] }
+
+        const time = (days.length > 0 || startTime || endTime)
+            ? {
+                days: days.length > 0 ? days : undefined,
+                start_time: startTime ? startTime.split(":").map(Number) : undefined,
+                end_time: endTime ? endTime.split(":").map(Number) : undefined,
+            }
+            : null
+
+        return {
+            year: year.trim() || null,
+            semester: semester.trim() || null,
+            dept: dept || null,
+            name: name.trim() || null,
+            credits: creditsFilter,
+            prof: profs.length > 0 ? profs : null,
+            time,
         }
+    }, [year, semester, dept, name, credits, days, startTime, endTime, profs])
 
-        const startTime = getString("start-time")
-        const endTime = getString("end-time")
-        const day = getString("day-of-week")
-
-        let time: Record<string, unknown> | null = null
-        if (startTime || endTime || day) {
-            time = {}
-            if (day) time.day = day
-            if (startTime) time.start_time = startTime.split(":").map(Number)
-            if (endTime) time.end_time = endTime.split(":").map(Number)
-        }
-
-        try {
-            const filterRes = await filterCourses({
-                semester: getString("semester"),
-                name: getString("name"),
-                prof: getString("prof"),
-                dept: getString("dept"),
-                credits: getString("credits"),
-                year: getString("year"),
-                time: time as any,
-            })
-            setResults(filterRes)
-        } catch (err) {
-            console.error("Filter error:", err)
-        }
-    }
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        submitFilters()
-    }
+    useEffect(() => {
+        let cancelled = false
+        filterCourses(params)
+            .then(results => { if (!cancelled) setResults(results) })
+            .catch(err => console.error("Filter error:", err))
+        return () => { cancelled = true }
+    }, [params, setResults])
 
     return (
         <Sidebar variant="floating" collapsible="offcanvas">
             <SidebarHeader className="px-4 py-3 text-lg font-semibold">Filters</SidebarHeader>
             <SidebarContent className="px-2">
-                <form ref={formRef} onSubmit={handleSubmit} onChange={submitFilters}>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Year</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="year" name="year" type="number" placeholder="2024" />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Semester</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="semester" name="semester" placeholder="Fall, Spring, Winter_Online..." />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Department</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="department" name="dept" placeholder="Department" />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Course name</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="course-name" name="name" placeholder="Course name" />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Number of credits</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="credit" name="credits" type="number" />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Days of the week</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <NativeSelect id="day-of-week" name="day-of-week">
-                                <NativeSelectOption value="">Select a day...</NativeSelectOption>
-                                <NativeSelectOption value="M">Monday</NativeSelectOption>
-                                <NativeSelectOption value="T">Tuesday</NativeSelectOption>
-                                <NativeSelectOption value="W">Wednesday</NativeSelectOption>
-                                <NativeSelectOption value="R">Thursday</NativeSelectOption>
-                                <NativeSelectOption value="F">Friday</NativeSelectOption>
-                            </NativeSelect>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Time range</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="start-time" name="start-time" type="time" min="08:00" max="21:00" step="900" />
-                            <Input id="end-time" name="end-time" type="time" min="08:00" max="21:00" step="900" />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Professor</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <Input id="professor" name="prof" placeholder="Hutchins, Jon, or..." />
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <button type="submit" hidden />
-                </form>
+                <SidebarGroup>
+                    <SidebarGroupLabel>Year</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <Input
+                            id="year"
+                            type="number"
+                            placeholder="2024"
+                            value={year}
+                            onChange={e => setYear(e.target.value)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Semester</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <Input
+                            id="semester"
+                            placeholder="Fall, Spring, Winter_Online..."
+                            value={semester}
+                            onChange={e => setSemester(e.target.value)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Department</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <Combobox
+                            items={subjectOptions}
+                            value={dept ?? ""}
+                            onValueChange={(v: string) => setDept(v || null)}
+                        >
+                            <ComboboxInput placeholder="Department" showClear={!!dept}>
+                                <ComboboxContent>
+                                    <ComboboxList>
+                                        <ComboboxEmpty>No departments</ComboboxEmpty>
+                                        {subjectOptions.map(s => (
+                                            <ComboboxItem key={s} value={s}>{s}</ComboboxItem>
+                                        ))}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </ComboboxInput>
+                        </Combobox>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Course name</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <Input
+                            id="course-name"
+                            placeholder="Course name"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>
+                        Number of credits{" "}
+                        <span className="text-xs font-normal text-muted-foreground">
+                            ({credits[0] === credits[1] ? credits[0] : `${credits[0]}–${credits[1]}`})
+                        </span>
+                    </SidebarGroupLabel>
+                    <SidebarGroupContent className="px-2 py-2">
+                        <Slider
+                            min={CREDITS_MIN}
+                            max={CREDITS_MAX}
+                            step={1}
+                            value={credits}
+                            onValueChange={(v: number[]) => setCredits([v[0], v[1]] as [number, number])}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Days of the week</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <ToggleGroup
+                            type="multiple"
+                            variant="outline"
+                            value={days}
+                            onValueChange={setDays}
+                        >
+                            {DAYS.map(d => (
+                                <ToggleGroupItem key={d.value} value={d.value} aria-label={d.value}>
+                                    {d.label}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Time range</SidebarGroupLabel>
+                    <SidebarGroupContent className="flex gap-2">
+                        <Input
+                            id="start-time"
+                            type="time"
+                            min="08:00"
+                            max="21:00"
+                            step="900"
+                            value={startTime}
+                            onChange={e => setStartTime(e.target.value)}
+                        />
+                        <Input
+                            id="end-time"
+                            type="time"
+                            min="08:00"
+                            max="21:00"
+                            step="900"
+                            value={endTime}
+                            onChange={e => setEndTime(e.target.value)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>Professors</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <Combobox
+                            items={facultyOptions}
+                            multiple
+                            value={profs}
+                            onValueChange={(v: string[]) => setProfs(v)}
+                        >
+                            <ComboboxChips>
+                                {profs.map(p => (
+                                    <ComboboxChip key={p}>
+                                        <ComboboxValue>{p}</ComboboxValue>
+                                    </ComboboxChip>
+                                ))}
+                                <ComboboxChipsInput placeholder={profs.length ? "" : "Select one or more..."} />
+                            </ComboboxChips>
+                            <ComboboxContent>
+                                <ComboboxList>
+                                    <ComboboxEmpty>No professors</ComboboxEmpty>
+                                    {facultyOptions.map(f => (
+                                        <ComboboxItem key={f} value={f}>{f}</ComboboxItem>
+                                    ))}
+                                </ComboboxList>
+                            </ComboboxContent>
+                        </Combobox>
+                    </SidebarGroupContent>
+                </SidebarGroup>
             </SidebarContent>
             <SidebarFooter />
         </Sidebar>
