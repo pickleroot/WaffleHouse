@@ -14,20 +14,36 @@ import {
     TableRow,
 } from "@/components/ui/table"
 
+// --- infinite-scroll change ---
+// Optional props so non-search tables (schedule view) are unaffected:
+//   - loadMoreRef: forwarded to a sentinel <tr> rendered after the last data
+//     row. The parent attaches an IntersectionObserver to it and calls
+//     fetchNextPage() when it scrolls into view.
+//   - isFetchingMore: when true, a "Loading…" row is shown in place of the
+//     sentinel so the user gets feedback during the in-flight page fetch.
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
+    loadMoreRef?: React.Ref<HTMLTableRowElement>
+    isFetchingMore?: boolean
 }
+// --- /infinite-scroll change ---
 
 export function DataTable<TData, TValue>({
     columns,
     data,
+    // --- infinite-scroll change ---
+    loadMoreRef,
+    isFetchingMore,
+    // --- /infinite-scroll change ---
 }: DataTableProps<TData, TValue>) {
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
     })
+
+    const rows = table.getRowModel().rows
 
     return (
         <div className="rounded-md border">
@@ -55,8 +71,8 @@ export function DataTable<TData, TValue>({
                     ))}
                 </TableHeader>
                 <TableBody>
-                    {table.getRowModel().rows?.length ? (
-                        table.getRowModel().rows.map((row) => (
+                    {rows?.length ? (
+                        rows.map((row) => (
                             <TableRow key={row.id}>
                                 {row.getVisibleCells().map((cell) => {
                                     const isSticky = (cell.column.columnDef.meta as any)?.sticky;
@@ -84,6 +100,26 @@ export function DataTable<TData, TValue>({
                             </TableCell>
                         </TableRow>
                     )}
+                    {/* --- infinite-scroll change ---
+                        Sentinel row rendered only when the parent opted in.
+                        Renders after all data rows. A separate "Loading…" row
+                        is shown while the next page is in flight. */}
+                    {loadMoreRef && rows.length > 0 && (
+                        <TableRow ref={loadMoreRef} aria-hidden>
+                            <TableCell colSpan={columns.length} className="h-2 p-0" />
+                        </TableRow>
+                    )}
+                    {isFetchingMore && (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columns.length}
+                                className="h-12 text-center text-muted-foreground text-sm"
+                            >
+                                Loading more…
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {/* --- /infinite-scroll change --- */}
                 </TableBody>
             </Table>
         </div>
