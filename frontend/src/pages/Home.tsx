@@ -24,6 +24,8 @@ import HomeHeader from "@/components/home/HomeHeader"
 import QuoteDisplay from "@/components/home/QuoteDisplay"
 import SearchResultsView from "@/components/home/SearchResultsView"
 import CalendarView from "@/components/home/CalendarView"
+import { FiltersSidebar } from "@/components/search/FiltersSidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { buildSearchColumns } from "@/components/home/columns/searchColumns"
 import { buildScheduleColumns } from "@/components/home/columns/scheduleColumns"
 
@@ -190,6 +192,12 @@ export default function Home() {
             <main className="flex flex-1 justify-center min-h-full mb-16">
                 {mode === "search" && !hasSearched && <QuoteDisplay />}
 
+                {/*
+                  * Sidebar is mounted only after the user's first search, so it
+                  * starts hidden and appears (open) once results exist. The
+                  * SidebarProvider keeps open/collapsed state internal, so
+                  * toggling never re-renders Home or the memoized results view.
+                  */}
                 {mode === "search" && hasSearched && (
                     <SearchResultsView
                         columns={searchColumns}

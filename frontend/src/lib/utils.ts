@@ -68,3 +68,38 @@ export function toMinutes(time: number[] | string): number {
     const [h = 0, m = 0] = time.split(":").map(Number);
     return h * 60 + m;
 }
+
+/**
+ * Format a backend semester key like "2025_Spring" or "2024_Winter_Online"
+ * into a human-readable label like "Spring 2025" or "Winter Online 2024".
+ */
+export function formatSemester(raw: string): string {
+    const parts = raw.split("_");
+    if (parts.length < 2) return raw;
+    const [year, ...rest] = parts;
+    return `${rest.join(" ")} ${year}`;
+}
+
+/**
+ * Sort backend semester keys from most recent to oldest. Within a year,
+ * order by season: Winter > Fall > Summer > Spring (the most recent term first).
+ */
+export function sortSemestersDescending(semesters: string[]): string[] {
+    const seasonOrder: Record<string, number> = {
+        Winter: 4,
+        Fall: 3,
+        Summer: 2,
+        Spring: 1,
+    };
+    return [...semesters].sort((a, b) => {
+        const [yearA, seasonA = ""] = a.split("_");
+        const [yearB, seasonB = ""] = b.split("_");
+        const yearDiff = parseInt(yearB, 10) - parseInt(yearA, 10);
+        if (yearDiff !== 0) return yearDiff;
+        const sa = seasonOrder[seasonA] ?? 0;
+        const sb = seasonOrder[seasonB] ?? 0;
+        if (sb !== sa) return sb - sa;
+        // Stable order for modifiers (e.g., "_Online" vs base) — base before modifier
+        return a.length - b.length;
+    });
+}

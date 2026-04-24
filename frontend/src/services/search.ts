@@ -104,12 +104,18 @@ export async function searchCourses(
     }
 
     try {
-        const { data, error } = await supabase
+        let builder = supabase
             .from('courses')
             .select('*')
             .or(`name.ilike.%${query}%,subject.ilike.%${query}%`)
             .order('id', { ascending: true })
             .range(offset, offset + limit - 1);
+
+        if (semester) {
+            builder = builder.eq('semester', semester);
+        }
+
+        const { data, error } = await builder;
 
         if (error) {
             console.error(`Search failed: ${error.message}`);
@@ -131,12 +137,12 @@ export async function searchCourses(
 export interface FilterParams {
     semester?: string | null;
     name?: string | null;
-    prof?: string | null;
+    prof?: string[] | null;
     dept?: string | null;
-    credits?: string | null;
+    credits?: { min: number; max: number } | null;
     year?: string | null;
     time?: {
-        day?: string;
+        days?: string[];
         start_time?: number[];
         end_time?: number[];
     } | null;

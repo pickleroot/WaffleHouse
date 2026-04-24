@@ -1,0 +1,36 @@
+{
+  // The name of your Worker. This is used as the project identifier in Cloudflare's
+  // dashboard and forms part of your default deployment URL:
+  // https://<name>.pages.dev or https://<name>.<subdomain>.workers.dev
+  "name": "coursethreads",
+
+  // The minimum date Cloudflare uses to determine which compatibility flags are
+  // enabled by default. Pin this to today's date when setting up a new project
+  // and update it deliberately — never blindly bump it, as it can introduce
+  // breaking changes in runtime behaviour.
+  "compatibility_date": "2026-04-22",
+
+  // Defines this Worker as a static asset host. The "directory" field points to
+  // the folder containing your built static files. Wrangler uploads everything
+  // in this folder to Cloudflare's edge network on deployment.
+  "assets": {
+    "directory": "frontend/dist",
+
+    // Serve this file when a route doesn't match any static asset. Essential
+    // for single-page apps (SPAs) where the client-side router handles paths
+    // like /about or /dashboard that don't map to real files.
+    "not_found_handling": "single-page-application"
+  },
+
+  // Environment-specific overrides. "preview" is used when running `wrangler dev`
+  // and "production" is used on your main deployment. You can change the asset
+  // directory, bindings, or any other setting per environment.
+  "env": {
+    "preview": {
+      "name": "coursethreads-preview"
+    },
+    "production": {
+      "name": "coursethreads"
+    }
+  }
+}

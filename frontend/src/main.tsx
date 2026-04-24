@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 // --- /infinite-scroll change ---
 import './index.css'
 import App from './App.tsx'
+import { TooltipProvider } from './components/ui/tooltip.tsx'
 
 // Initialize the JS client
 import { createClient } from '@supabase/supabase-js'
