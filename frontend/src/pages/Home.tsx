@@ -11,6 +11,7 @@ import {
 import { useAuthRedirect } from "@/hooks/useAuthRedirect"
 import { useToast } from "@/hooks/useToast"
 import { useSchedule } from "@/hooks/useSchedule"
+import { useCourseSearch, useUpdateCourseInCache, type SearchParams } from "@/hooks/useCourseSearch"
 import Footer from "@/components/layout/Footer"
 import Toast from "@/components/home/Toast"
 import HomeHeader from "@/components/home/HomeHeader"
@@ -26,18 +27,27 @@ export default function Home() {
     const navigate = useNavigate()
     useAuthRedirect()
 
-    const [results, setResults] = useState<Course[]>([])
+    const [searchParams, setSearchParams] = useState<SearchParams>(null)
     const [hasSearched, setHasSearched] = useState(false)
     const [mode, setMode] = useState<Mode>("search")
+
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useCourseSearch(searchParams)
+
+    const results = useMemo<Course[]>(
+        () => data?.pages.flatMap((p) => p.courses) ?? [],
+        [data],
+    )
+
+    const updateCourseInCache = useUpdateCourseInCache()
 
     const { toast, showToast } = useToast()
     const { schedule, events, setSchedule, setEvents, fetchSchedule } = useSchedule()
 
-    /**
-     * Fetch a single course by ID and replace its entry in `results` state.
-     * Called after add/remove so that openSeats updates in the search table
-     * without needing to re-run the entire search query.
-     */
     const refreshCourseInResults = useCallback(async (id: number) => {
         try {
             const courseData = await getCourse(String(id));
@@ -59,26 +69,16 @@ export default function Home() {
                 isOpen: (courseData as any).is_open,
                 location: (courseData as any).location,
             };
-            setResults(prev => prev.map(c => c.id === id ? updatedCourse : c));
+            updateCourseInCache(updatedCourse);
         } catch (err) {
             console.error("Failed to refresh course in results:", err);
         }
-    }, []);
+    }, [updateCourseInCache]);
 
-    /**
-     * IDs of courses already in the user's schedule.
-     * Checked before conflict detection — a course should not be flagged
-     * as conflicting with itself.
-     */
     const scheduledIds = useMemo<Set<number>>(() => {
         return new Set(schedule.map((c: any) => c.id));
     }, [schedule]);
 
-    /**
-     * IDs of courses that conflict with the schedule but are NOT already in it.
-     * Courses already in the schedule get a Remove button instead of being
-     * flagged as conflicts.
-     */
     const conflictingIds = useMemo<Set<number>>(() => {
         const ids = new Set<number>();
         for (const course of results) {
@@ -98,7 +98,6 @@ export default function Home() {
                 return;
             }
             await addCourseToSchedule(user.id, String(course.id));
-            console.log("Course added successfully:", course.name);
             fetchSchedule();
             refreshCourseInResults(course.id);
         } catch (err) {
@@ -114,7 +113,6 @@ export default function Home() {
                 return;
             }
             await removeCourseFromSchedule(user.id, String(course.id));
-            console.log("Course removed successfully:", course.name);
             fetchSchedule();
             refreshCourseInResults(course.id);
         } catch (err) {
@@ -150,7 +148,7 @@ export default function Home() {
             <HomeHeader
                 hasSearched={hasSearched}
                 setHasSearched={setHasSearched}
-                setResults={setResults}
+                setSearchParams={setSearchParams}
                 mode={mode}
                 setMode={setMode}
                 schedule={schedule}
@@ -162,29 +160,19 @@ export default function Home() {
             <main className="flex flex-1 justify-center min-h-full mb-16">
                 {mode === "search" && !hasSearched && <QuoteDisplay />}
 
-                {/*
-                  * Sidebar is mounted only after the user's first search, so it
-                  * starts hidden and appears (open) once results exist. The
-                  * SidebarProvider keeps open/collapsed state internal, so
-                  * toggling never re-renders Home or the memoized results view.
-                  */}
                 {mode === "search" && hasSearched && (
                     <SidebarProvider defaultOpen={true} className="min-h-0">
-                        <FiltersSidebar setResults={setResults} />
-                        {/*
-                          * Trigger is a direct sibling of the Sidebar so it can
-                          * use `peer-data-*` to slide horizontally with the
-                          * sidebar's open/collapsed state via CSS only — no
-                          * React re-renders needed. `fixed` pins it to the
-                          * viewport so it overlaps the header vertically.
-                          */}
+                        <FiltersSidebar setSearchParams={setSearchParams} />
                         <div className="fixed top-2 left-2 z-50 transition-[left] duration-200 ease-linear peer-data-[state=expanded]:left-[calc(var(--sidebar-width)+0.5rem)]">
                             <SidebarTrigger />
                         </div>
                         <div className="flex-1 flex flex-col">
                             <SearchResultsView
                                 columns={searchColumns}
-                                results={results}
+                                courses={results}
+                                fetchNextPage={fetchNextPage}
+                                hasNextPage={!!hasNextPage}
+                                isFetchingNextPage={isFetchingNextPage}
                             />
                         </div>
                     </SidebarProvider>
