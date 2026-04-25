@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button"
 import type { Mode, Course } from "@/lib/types"
 import type { CourseEvent } from "@/components/calendar/BigCalendar"
 import { downloadScheduleIcs } from "@/lib/ical"
-import { toEvents } from "@/lib/courseEvents"
 
 interface ScheduleActionsProps {
     mode: Mode
@@ -19,8 +18,8 @@ interface ScheduleActionsProps {
 export default function ScheduleActions({
     mode,
     schedule,
-    setSchedule,
-    setEvents,
+    setSchedule: _setSchedule,
+    setEvents: _setEvents,
     showToast,
 }: ScheduleActionsProps) {
     return (
@@ -39,53 +38,6 @@ export default function ScheduleActions({
                     Export iCal
                 </Button>
             )}
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                    try {
-                        const res = await fetch("http://localhost:7001/schedule/save", {
-                            method: "POST",
-                        });
-                        if (!res.ok) {
-                            showToast("Failed to save schedule.", false);
-                            console.error("Failed to save schedule:", await res.text());
-                        } else {
-                            showToast("Schedule saved successfully.", true);
-                        }
-                    } catch (err) {
-                        showToast("Failed to save schedule.", false);
-                        console.error("Error saving schedule:", err);
-                    }
-                }}
-            >
-                Save Schedule
-            </Button>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                    try {
-                        const res = await fetch("http://localhost:7001/schedule/load", {
-                            method: "POST",
-                        });
-                        if (!res.ok) {
-                            showToast("Failed to load schedule.", false);
-                            console.error("Failed to load schedule:", await res.text());
-                            return;
-                        }
-                        const data = await res.json();
-                        setSchedule(data);
-                        setEvents(toEvents(data));
-                        showToast("Schedule loaded successfully.", true);
-                    } catch (err) {
-                        showToast("Failed to load schedule.", false);
-                        console.error("Error loading schedule:", err);
-                    }
-                }}
-            >
-                Load Schedule
-            </Button>
         </>
     );
 }

@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle } from "lucide-react"
-import { formatTime } from "@/lib/utils"
+import { AlertTriangle, CirclePlus } from "lucide-react"
+import { formatCourseTimes } from "@/lib/utils"
 import type { Course } from "@/lib/types"
 
 interface SearchColumnDeps {
@@ -24,7 +24,7 @@ function Dimmed({ dimmed, children }: { dimmed: boolean; children: React.ReactNo
 }
 
 export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] {
-    const { scheduledIds, conflictingIds, onAdd, onRemove, onNavigate } = deps;
+    const { scheduledIds, conflictingIds, onAdd, onRemove } = deps;
 
     const isDimmed = (id: number) => scheduledIds.has(id) || conflictingIds.has(id);
 
@@ -32,40 +32,46 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
         {
             accessorKey: "subject",
             header: "Dept",
+            meta: {
+                headerClassName: "w-16 min-w-16",
+                cellClassName: "w-16 min-w-16",
+            },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.subject}</Dimmed>,
         },
         {
             accessorKey: "code",
             header: "Code",
+            meta: {
+                headerClassName: "w-16 min-w-16",
+                cellClassName: "w-16 min-w-16",
+            },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.code}</Dimmed>,
         },
         {
             accessorKey: "section",
             header: "Section",
+            meta: {
+                headerClassName: "w-[4.5rem] min-w-[4.5rem]",
+                cellClassName: "w-[4.5rem] min-w-[4.5rem]",
+            },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.section}</Dimmed>,
         },
         {
             accessorKey: "name",
             header: "Course name",
-            cell: ({ row }) => (
-                // The link stays fully clickable even when dimmed — only the text fades,
-                // not the pointer events, so the user can still navigate to the course page.
-                <button
-                    onClick={() => onNavigate(row.original.id)}
-                    className="text-left hover:underline cursor-pointer text-foreground"
-                >
-                    <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.name}</Dimmed>
-                </button>
-            ),
-        },
-        {
-            accessorKey: "creditHours",
-            header: "Credits",
-            cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.creditHours}</Dimmed>,
+            meta: {
+                headerClassName: "min-w-44 px-1",
+                cellClassName: "min-w-44 whitespace-normal px-1",
+            },
+            cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.name}</Dimmed>,
         },
         {
             accessorKey: "openSeats",
             header: "Open Seats",
+            meta: {
+                headerClassName: "w-20 min-w-20",
+                cellClassName: "w-20 min-w-20",
+            },
             cell: ({ row }) => {
                 const noSeats = row.original.openSeats === 0;
                 return (
@@ -79,27 +85,24 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             },
         },
         {
-            id: "professor",
-            header: "Professor",
-            cell: ({ row }) => {
-                const professors = row.original.professors;
-                if (!Array.isArray(professors)) return null;
-                const text = professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
-                return <Dimmed dimmed={isDimmed(row.original.id)}>{text}</Dimmed>;
-            },
-        },
-        {
             id: "time",
+            accessorFn: (course) => {
+                if (!Array.isArray(course.times) || course.times.length === 0) {
+                    return "TBD"
+                }
+                return formatCourseTimes(course.times, { compactDays: true })
+            },
             header: "Days & Time",
+            meta: {
+                headerClassName: "min-w-48",
+                cellClassName: "min-w-48 max-w-none whitespace-nowrap",
+            },
             cell: ({ row }) => {
                 const times = row.original.times;
-                if (!Array.isArray(times)) return null;
-                const text = times.map((t) => {
-                    const day   = String(t.day);
-                    const start = Array.isArray(t.start_time) ? formatTime(t.start_time) : String(t.start_time);
-                    const end   = Array.isArray(t.end_time)   ? formatTime(t.end_time)   : String(t.end_time);
-                    return `${day} ${start}–${end}`;
-                }).join(", ");
+                if (!Array.isArray(times) || times.length === 0) {
+                    return <Dimmed dimmed={isDimmed(row.original.id)}>TBD</Dimmed>;
+                }
+                const text = formatCourseTimes(times, { compactDays: true });
                 return <Dimmed dimmed={isDimmed(row.original.id)}>{text}</Dimmed>;
             },
         },
@@ -108,7 +111,12 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             header: "",
             // meta.sticky is read by DataTable to apply `sticky right-0 bg-background`
             // to this column's <th> and <td>, keeping it pinned during horizontal scroll.
-            meta: { sticky: true },
+            meta: {
+                sticky: true,
+                headerClassName: "w-10 min-w-10 px-1",
+                cellClassName: "w-10 min-w-10 px-1",
+            },
+            enableSorting: false,
             cell: ({ row }) => {
                 const course = row.original;
                 const inSchedule = scheduledIds.has(course.id);
@@ -126,8 +134,15 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
                 if (conflicts) return null;
 
                 return (
-                    <Button size="sm" onClick={() => onAdd(course)}>
-                        Add
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-7 w-7 text-foreground hover:bg-green-600 hover:text-white"
+                        aria-label="Add to Schedule"
+                        title="Add to Schedule"
+                        onClick={() => onAdd(course)}
+                    >
+                        <CirclePlus className="h-4 w-4" />
                     </Button>
                 );
             },
