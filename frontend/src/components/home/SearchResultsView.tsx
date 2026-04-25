@@ -33,5 +33,3 @@ function SearchResultsViewInner({ columns, results }: SearchResultsViewProps) {
         </div>
     )
 }
-
-export default React.memo(SearchResultsViewInner)
