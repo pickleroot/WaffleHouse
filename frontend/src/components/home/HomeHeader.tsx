@@ -1,5 +1,6 @@
 import SearchCalendarBar from "@/components/search/SearchCalendarBar"
 import ScheduleActions from "@/components/home/ScheduleActions"
+import ThemePopoverButton from "@/components/theme/ThemePopoverButton"
 import UserAvatarButton from "@/components/home/UserAvatarButton"
 import type { Mode, Course } from "@/lib/types"
 import type { CourseEvent } from "@/components/calendar/BigCalendar"
@@ -34,6 +35,7 @@ export default function HomeHeader(props: HomeHeaderProps) {
                     setEvents={props.setEvents}
                     showToast={props.showToast}
                 />
+                <ThemePopoverButton />
                 <UserAvatarButton />
             </div>
         </header>

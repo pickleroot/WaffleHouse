@@ -2,6 +2,17 @@
 import { supabase } from '@/lib/supabase';
 import {  } from "@/lib/types"
 
+interface RawCourseTime {
+  course_id: number | string
+  day: string
+  start_time: string
+  end_time: string
+}
+
+function getCourseKey(id: number | string): string {
+  return String(id);
+}
+
 export async function getCourse(courseId: string) {
     const [courseResponse, timesResponse] = await Promise.all([
         supabase.from('courses').select('*').eq('id', courseId).single(),
@@ -21,12 +32,6 @@ export async function getCourse(courseId: string) {
 }
 
 export async function getSchedule(userId: string) {
-  // Check authentication
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("User is not authenticated");
-  }
-
   // get the course ids. 
   const { data, error } = await supabase
     .from('enrollments')
@@ -46,17 +51,18 @@ export async function getSchedule(userId: string) {
 
     if (!timesError && timesData) {
       // Map times to their respective courses
-      const timesMap = new Map<number, typeof timesData>();
-      (timesData as any[]).forEach(time => {
-        if (!timesMap.has(time.course_id)) {
-          timesMap.set(time.course_id, []);
+      const timesMap = new Map<string, RawCourseTime[]>();
+      (timesData as RawCourseTime[]).forEach(time => {
+        const courseKey = getCourseKey(time.course_id);
+        if (!timesMap.has(courseKey)) {
+          timesMap.set(courseKey, []);
         }
-        timesMap.get(time.course_id)!.push(time);
+        timesMap.get(courseKey)!.push(time);
       });
 
       // Attach times to courses in enrollments
       data.forEach(enrollment => {
-        const courseTimes = timesMap.get(enrollment.course_id) || [];
+        const courseTimes = timesMap.get(getCourseKey(enrollment.course_id)) || [];
         if (enrollment.courses) {
           enrollment.courses.times = courseTimes.map(t => ({
             day: t.day,
@@ -78,12 +84,6 @@ export async function getSchedule(userId: string) {
  * @returns 
  */
 export async function addCourseToSchedule(userId: string, courseId: string) {
-  // Check authentication
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("User is not authenticated");
-  }
-
   const { data, error } = await supabase
     .from('enrollments')
     .insert({ user_id: userId, course_id: courseId })
@@ -94,12 +94,6 @@ export async function addCourseToSchedule(userId: string, courseId: string) {
 }
 
 export async function removeCourseFromSchedule(userId: string, courseId: string) {
-  // Check authentication
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error("User is not authenticated");
-  }
-
   const { error } = await supabase
     .from('enrollments')
     .delete()
@@ -107,5 +101,3 @@ export async function removeCourseFromSchedule(userId: string, courseId: string)
     .eq('course_id', courseId);
   if (error) throw error;
 }
-
-

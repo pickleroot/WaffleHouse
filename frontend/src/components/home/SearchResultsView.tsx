@@ -2,6 +2,7 @@ import * as React from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { Course } from "@/lib/types"
 import { DataTable } from "@/components/data/DataTable"
+import CourseRowDetails from "@/components/home/CourseRowDetails"
 
 interface SearchResultsViewProps {
     columns: ColumnDef<Course>[]
@@ -15,8 +16,8 @@ interface SearchResultsViewProps {
  */
 function SearchResultsViewInner({ columns, results }: SearchResultsViewProps) {
     return (
-        <div className="flex-1 flex flex-col items-center px-6 pt-8">
-            <div className="w-full max-w-4xl mx-auto">
+        <div className="flex-1 flex flex-col px-3 pt-5">
+            <div className="w-full max-w-6xl mx-auto">
                 {/*
                   * Dimming is handled per-cell inside each column's cell renderer
                   * using opacity-30 on a wrapping <span>, so Tailwind always sees
@@ -28,7 +29,13 @@ function SearchResultsViewInner({ columns, results }: SearchResultsViewProps) {
                   *   const isSticky = (column.columnDef.meta as any)?.sticky;
                   *   className={cn("...", isSticky && "sticky right-0 bg-background")}
                   */}
-                <DataTable columns={columns} data={results} />
+                <DataTable
+                    columns={columns}
+                    data={results}
+                    getRowId={(course) => String(course.id)}
+                    renderExpandedContent={(course) => <CourseRowDetails course={course} />}
+                    density="compact"
+                />
             </div>
         </div>
     )

@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Footer from "@/components/layout/Footer.tsx"
-import { cn, transformCourse, formatDay, formatTime, formatProfessorName, toMinutes } from "@/lib/utils"
+import {
+    cn,
+    transformCourse,
+    formatProfessorName,
+    formatTimeRange,
+    formatTimeslotDays,
+    groupCourseTimes,
+    toMinutes,
+} from "@/lib/utils"
 import type { Course } from "@/lib/types"
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -317,15 +325,15 @@ export default function Course() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {course.times && course.times.length > 0 ? (
-                                course.times.map((slot, index) => (
+                                groupCourseTimes(course.times).map((slot, index) => (
                                     <div key={index} className="flex items-center gap-4">
                                         <div className="flex items-center gap-2 min-w-[140px] text-muted-foreground">
                                             <Calendar className="h-4 w-4" />
-                                            <span>{formatDay(slot.day)}</span>
+                                            <span>{formatTimeslotDays(slot.days)}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4 text-muted-foreground" />
-                                            <span>{formatTime(slot.start_time)} - {formatTime(slot.end_time)}</span>
+                                            <span>{formatTimeRange(slot.start_time, slot.end_time)}</span>
                                         </div>
                                     </div>
                                 ))

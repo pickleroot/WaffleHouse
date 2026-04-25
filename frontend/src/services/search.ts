@@ -17,6 +17,17 @@ interface RawCourseData {
     location: string
 }
 
+interface RawCourseTime {
+    course_id: number | string
+    day: string
+    start_time: string
+    end_time: string
+}
+
+function getCourseKey(id: number | string): string {
+    return String(id)
+}
+
 function transformRawCourse(raw: RawCourseData): Course {
     // Extract year from semester (e.g., "2025_Spring" -> 2025)
     const year = parseInt(raw.semester.split('_')[0], 10);
@@ -41,11 +52,6 @@ function transformRawCourse(raw: RawCourseData): Course {
 }
 
 export async function getSemesters(): Promise<string[]> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        throw new Error("User is not authenticated");
-    }
-
     const { data, error } = await supabase
         .from('courses')
         .select('semester');
@@ -65,12 +71,6 @@ export async function getSemesters(): Promise<string[]> {
 export async function searchCourses(query: string, semester?: string | null): Promise<Course[]> {
     if (!query.trim()) {
         return [];
-    }
-
-    // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        throw new Error("User is not authenticated");
     }
 
     try {
@@ -102,17 +102,18 @@ export async function searchCourses(query: string, semester?: string | null): Pr
 
             if (!timesError && timesData) {
                 // Map times to their respective courses
-                const timesMap = new Map<number, typeof timesData>();
-                (timesData as any[]).forEach(time => {
-                    if (!timesMap.has(time.course_id)) {
-                        timesMap.set(time.course_id, []);
+                const timesMap = new Map<string, RawCourseTime[]>();
+                (timesData as RawCourseTime[]).forEach(time => {
+                    const courseKey = getCourseKey(time.course_id);
+                    if (!timesMap.has(courseKey)) {
+                        timesMap.set(courseKey, []);
                     }
-                    timesMap.get(time.course_id)!.push(time);
+                    timesMap.get(courseKey)!.push(time);
                 });
 
                 // Attach times to courses
                 courses.forEach(course => {
-                    const courseTimes = timesMap.get(course.id) || [];
+                    const courseTimes = timesMap.get(getCourseKey(course.id)) || [];
                     course.times = courseTimes.map(t => ({
                         day: t.day,
                         start_time: t.start_time,
@@ -144,10 +145,6 @@ export interface FilterParams {
 }
 
 export async function fetchFilterOptions(): Promise<{ subjects: string[]; faculty: string[] }> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        throw new Error("User is not authenticated");
-    }
     const { data, error } = await supabase.from('courses').select('subject, faculty');
     if (error || !data) {
         console.error("Failed to fetch filter options:", error?.message);
@@ -166,12 +163,6 @@ export async function fetchFilterOptions(): Promise<{ subjects: string[]; facult
 }
 
 export async function filterCourses(filters: FilterParams): Promise<Course[]> {
-    // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        throw new Error("User is not authenticated");
-    }
-
     try {
         let query = supabase.from('courses').select('*');
 
@@ -215,16 +206,17 @@ export async function filterCourses(filters: FilterParams): Promise<Course[]> {
                 .in('course_id', courseIds);
 
             if (!timesError && timesData) {
-                const timesMap = new Map<number, typeof timesData>();
-                (timesData as any[]).forEach(time => {
-                    if (!timesMap.has(time.course_id)) {
-                        timesMap.set(time.course_id, []);
+                const timesMap = new Map<string, RawCourseTime[]>();
+                (timesData as RawCourseTime[]).forEach(time => {
+                    const courseKey = getCourseKey(time.course_id);
+                    if (!timesMap.has(courseKey)) {
+                        timesMap.set(courseKey, []);
                     }
-                    timesMap.get(time.course_id)!.push(time);
+                    timesMap.get(courseKey)!.push(time);
                 });
 
                 courses.forEach(course => {
-                    const courseTimes = timesMap.get(course.id) || [];
+                    const courseTimes = timesMap.get(getCourseKey(course.id)) || [];
                     course.times = courseTimes.map(t => ({
                         day: t.day,
                         start_time: t.start_time,

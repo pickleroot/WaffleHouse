@@ -1,13 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { formatTime } from "@/lib/utils"
+import { formatCourseTimes } from "@/lib/utils"
+import type { Course } from "@/lib/types"
 
 interface ScheduleColumnDeps {
-    onRemove: (course: any) => void
+    onRemove: (course: Course) => void
     onNavigate: (id: number) => void
 }
 
-export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<any>[] {
+export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<Course>[] {
     const { onRemove, onNavigate } = deps;
 
     return [
@@ -32,7 +33,7 @@ export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<any>[]
             cell: ({ row }) => {
                 const professors = row.original.professors;
                 if (!Array.isArray(professors)) return null;
-                return professors.map((p: any) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
+                return professors.map((p) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()).join(", ");
             },
         },
         {
@@ -41,12 +42,7 @@ export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<any>[]
             cell: ({ row }) => {
                 const times = row.original.times;
                 if (!Array.isArray(times)) return null;
-                return times.map((t: any) => {
-                    const day   = String(t.day);
-                    const start = Array.isArray(t.start_time) ? formatTime(t.start_time) : String(t.start_time);
-                    const end   = Array.isArray(t.end_time)   ? formatTime(t.end_time)   : String(t.end_time);
-                    return `${day} ${start}–${end}`;
-                }).join(", ");
+                return formatCourseTimes(times, { compactDays: true });
             },
         },
         {

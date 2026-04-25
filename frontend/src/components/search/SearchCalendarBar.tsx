@@ -22,7 +22,7 @@ const FALLBACK_SEMESTERS = [
     "2024_Fall",
 ];
 
-export default function SearchCalendarBar({ hasSearched, setHasSearched, setResults, mode, setMode }: SearchCalendarBarProps) {
+export default function SearchCalendarBar({ setHasSearched, setResults, mode, setMode }: SearchCalendarBarProps) {
     const [query, setQuery] = useState("")
     const [semesters, setSemesters] = useState<string[]>([])
     const [selectedSemester, setSelectedSemester] = useState<string>("")
@@ -103,8 +103,8 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
                     className={cn(
                         "flex items-center border-b-2 transition-all duration-300 ease-in-out",
                         mode === "search"
-                            ? "border-muted-foreground/30 focus-within:border-foreground"
-                            : "border-muted-foreground/30"
+                            ? "border-primary/40 focus-within:border-primary"
+                            : "border-primary"
                     )}
                 >
                     {/*
@@ -179,7 +179,7 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
                             "text-sm font-medium pb-1 whitespace-nowrap",
                             "transition-colors duration-300 ease-in-out",
                             mode === "calendar"
-                                ? "text-red-600 dark:text-red-400 cursor-default"
+                                ? "text-primary cursor-default"
                                 : "text-muted-foreground hover:text-foreground cursor-pointer"
                         )}
                     >
