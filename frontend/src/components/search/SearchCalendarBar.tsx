@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import type { Mode, Course } from "@/lib/types";
+import type { Mode } from "@/lib/types";
 import { cn, formatSemester, sortSemestersDescending } from "@/lib/utils";
-import { searchCourses, getSemesters } from "@/services/search"
+import { getSemesters } from "@/services/search"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import type { SearchParams } from "@/hooks/useCourseSearch"
 
 
 interface SearchCalendarBarProps {
   hasSearched: boolean;
   setHasSearched: (value: boolean) => void;
-  setResults: (results: Course[]) => void;
+  setSearchParams: (params: SearchParams) => void;
   mode: Mode;
   setMode: (mode: Mode) => void;
 }
@@ -22,7 +23,7 @@ const FALLBACK_SEMESTERS = [
     "2024_Fall",
 ];
 
-export default function SearchCalendarBar({ hasSearched, setHasSearched, setResults, mode, setMode }: SearchCalendarBarProps) {
+export default function SearchCalendarBar({ hasSearched, setHasSearched, setSearchParams, mode, setMode }: SearchCalendarBarProps) {
     const [query, setQuery] = useState("")
     const [semesters, setSemesters] = useState<string[]>([])
     const [selectedSemester, setSelectedSemester] = useState<string>("")
@@ -57,18 +58,11 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setResu
         return () => { cancelled = true; };
     }, [])
 
-    const handleSearch = async (e: React.SubmitEvent) => {
+    const handleSearch = (e: React.SubmitEvent) => {
         e.preventDefault();
-
         if (!query.trim()) return;
-
-        try {
-            const results = await searchCourses(query, selectedSemester || null);
-            setResults(results);
-            setHasSearched(true);
-        } catch (err) {
-            console.error("Search error:", err);
-        }
+        setSearchParams({ kind: "search", query, semester: selectedSemester || null });
+        setHasSearched(true);
     };
 
     return (

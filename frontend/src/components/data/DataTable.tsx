@@ -17,17 +17,23 @@ import {
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
+    loadMoreRef?: React.Ref<HTMLTableRowElement>
+    isFetchingMore?: boolean
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
+    loadMoreRef,
+    isFetchingMore,
 }: DataTableProps<TData, TValue>) {
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
     })
+
+    const rows = table.getRowModel().rows
 
     return (
         <div className="rounded-md border">
@@ -55,8 +61,8 @@ export function DataTable<TData, TValue>({
                     ))}
                 </TableHeader>
                 <TableBody>
-                    {table.getRowModel().rows?.length ? (
-                        table.getRowModel().rows.map((row) => (
+                    {rows?.length ? (
+                        rows.map((row) => (
                             <TableRow key={row.id}>
                                 {row.getVisibleCells().map((cell) => {
                                     const isSticky = (cell.column.columnDef.meta as any)?.sticky;
@@ -81,6 +87,21 @@ export function DataTable<TData, TValue>({
                                 className="h-24 text-center"
                             >
                                 No results.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {loadMoreRef && rows.length > 0 && (
+                        <TableRow ref={loadMoreRef} aria-hidden>
+                            <TableCell colSpan={columns.length} className="h-2 p-0" />
+                        </TableRow>
+                    )}
+                    {isFetchingMore && (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columns.length}
+                                className="h-12 text-center text-muted-foreground text-sm"
+                            >
+                                Loading more…
                             </TableCell>
                         </TableRow>
                     )}
