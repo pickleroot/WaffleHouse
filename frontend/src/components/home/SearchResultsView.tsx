@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import * as React from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import type { Course } from "@/lib/types"
@@ -6,15 +7,36 @@ import CourseRowDetails from "@/components/home/CourseRowDetails"
 
 interface SearchResultsViewProps {
     columns: ColumnDef<Course>[]
-    results: Course[]
+    courses: Course[]
+    fetchNextPage: () => void
+    hasNextPage: boolean
+    isFetchingNextPage: boolean
 }
 
-/**
- * Results table for the search view. Filter inputs now live in
- * `FiltersSidebar`; this component is only responsible for rendering the
- * data table. Memoized so sidebar toggles don't trigger a re-render.
- */
-function SearchResultsViewInner({ columns, results }: SearchResultsViewProps) {
+function SearchResultsViewInner({
+    columns,
+    courses,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+}: SearchResultsViewProps) {
+    const loadMoreRef = useRef<HTMLTableRowElement>(null)
+
+    useEffect(() => {
+        const el = loadMoreRef.current
+        if (!el) return
+        if (!hasNextPage || isFetchingNextPage) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) fetchNextPage()
+            },
+            { rootMargin: "200px" },
+        )
+        observer.observe(el)
+        return () => observer.disconnect()
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage, courses.length])
+
     return (
         <div className="flex-1 flex flex-col px-3 pt-5">
             <div className="w-full max-w-6xl mx-auto">
@@ -35,6 +57,13 @@ function SearchResultsViewInner({ columns, results }: SearchResultsViewProps) {
                     getRowId={(course) => String(course.id)}
                     renderExpandedContent={(course) => <CourseRowDetails course={course} />}
                     density="compact"
+        <div className="flex-1 flex flex-col items-center px-6 pt-8">
+            <div className="w-full max-w-4xl mx-auto">
+                <DataTable
+                    columns={columns}
+                    data={courses}
+                    loadMoreRef={hasNextPage ? loadMoreRef : undefined}
+                    isFetchingMore={isFetchingNextPage}
                 />
             </div>
         </div>

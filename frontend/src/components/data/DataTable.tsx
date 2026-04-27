@@ -32,6 +32,8 @@ interface ColumnMeta {
     sticky?: boolean
     headerClassName?: string
     cellClassName?: string
+    loadMoreRef?: React.Ref<HTMLTableRowElement>
+    isFetchingMore?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -40,6 +42,8 @@ export function DataTable<TData, TValue>({
     getRowId,
     renderExpandedContent,
     density = "default",
+    loadMoreRef,
+    isFetchingMore,
 }: DataTableProps<TData, TValue>) {
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
     const [sorting, setSorting] = useState<SortingState>([])
@@ -69,6 +73,7 @@ export function DataTable<TData, TValue>({
             [rowId]: !current[rowId],
         }))
     }
+    const rows = table.getRowModel().rows
 
     return (
         <div className="rounded-md border">
@@ -178,6 +183,25 @@ export function DataTable<TData, TValue>({
                                 </Fragment>
                             )
                         })
+                    {rows?.length ? (
+                        rows.map((row) => (
+                            <TableRow key={row.id}>
+                                {row.getVisibleCells().map((cell) => {
+                                    const isSticky = (cell.column.columnDef.meta as any)?.sticky;
+                                    return (
+                                        <TableCell
+                                            key={cell.id}
+                                            className={isSticky ? "sticky right-0 bg-background" : undefined}
+                                        >
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        ))
                     ) : (
                         <TableRow>
                             <TableCell
@@ -185,6 +209,21 @@ export function DataTable<TData, TValue>({
                                 className="h-24 text-center"
                             >
                                 No results.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {loadMoreRef && rows.length > 0 && (
+                        <TableRow ref={loadMoreRef} aria-hidden>
+                            <TableCell colSpan={columns.length} className="h-2 p-0" />
+                        </TableRow>
+                    )}
+                    {isFetchingMore && (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columns.length}
+                                className="h-12 text-center text-muted-foreground text-sm"
+                            >
+                                Loading more…
                             </TableCell>
                         </TableRow>
                     )}
