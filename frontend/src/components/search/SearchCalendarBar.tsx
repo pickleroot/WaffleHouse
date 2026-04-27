@@ -58,11 +58,28 @@ export default function SearchCalendarBar({ hasSearched, setHasSearched, setSear
         return () => { cancelled = true; };
     }, [])
 
-    const handleSearch = (e: React.SubmitEvent) => {
+    // Live search: update server-backed search params as the user types.
+    useEffect(() => {
+        if (mode !== "search") return;
+
+        const trimmedQuery = query.trim();
+        if (!trimmedQuery) {
+            setHasSearched(false);
+            setSearchParams({ kind: "search", query: "", semester: selectedSemester || null });
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            setSearchParams({ kind: "search", query: trimmedQuery, semester: selectedSemester || null });
+            setHasSearched(true);
+        }, 250);
+
+        return () => clearTimeout(timer);
+    }, [mode, query, selectedSemester, setHasSearched, setSearchParams]);
+
+    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+        // Prevent full-page submit; live search is handled by the effect above.
         e.preventDefault();
-        if (!query.trim()) return;
-        setSearchParams({ kind: "search", query, semester: selectedSemester || null });
-        setHasSearched(true);
     };
 
     return (
