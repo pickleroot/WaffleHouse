@@ -7,7 +7,6 @@
 
 import * as React from "react"
 import { useEffect, useMemo, useState } from "react"
-import type { Course } from "@/lib/types"
 import { Input } from "@/components/ui/input"
 import {
     Sidebar,
@@ -32,10 +31,11 @@ import {
     ComboboxList,
     ComboboxValue,
 } from "@/components/ui/combobox"
-import { fetchFilterOptions, filterCourses, type FilterParams } from "@/services/search"
+import { fetchFilterOptions, type FilterParams } from "@/services/search"
+import type { SearchParams } from "@/hooks/useCourseSearch"
 
 interface FiltersSidebarProps {
-    setResults: (results: Course[]) => void
+    setSearchParams: (params: SearchParams) => void
 }
 
 const CREDITS_MIN = 0
@@ -48,9 +48,7 @@ const DAYS: { value: string; label: string }[] = [
     { value: "F", label: "F" },
 ]
 
-function FiltersSidebarInner({ setResults }: FiltersSidebarProps) {
-    const [year, setYear] = useState("")
-    const [semester, setSemester] = useState("")
+function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
     const [dept, setDept] = useState<string | null>(null)
     const [name, setName] = useState("")
     const [credits, setCredits] = useState<[number, number]>([CREDITS_MIN, CREDITS_MAX])
@@ -86,53 +84,22 @@ function FiltersSidebarInner({ setResults }: FiltersSidebarProps) {
             : null
 
         return {
-            year: year.trim() || null,
-            semester: semester.trim() || null,
             dept: dept || null,
             name: name.trim() || null,
             credits: creditsFilter,
             prof: profs.length > 0 ? profs : null,
             time,
         }
-    }, [year, semester, dept, name, credits, days, startTime, endTime, profs])
+    }, [dept, name, credits, days, startTime, endTime, profs])
 
     useEffect(() => {
-        let cancelled = false
-        filterCourses(params)
-            .then(results => { if (!cancelled) setResults(results) })
-            .catch(err => console.error("Filter error:", err))
-        return () => { cancelled = true }
-    }, [params, setResults])
+        setSearchParams({ kind: "filter", filters: params })
+    }, [params, setSearchParams])
 
     return (
         <Sidebar variant="floating" collapsible="offcanvas">
             <SidebarHeader className="px-4 py-3 text-lg font-semibold">Filters</SidebarHeader>
             <SidebarContent className="px-2">
-                <SidebarGroup>
-                    <SidebarGroupLabel>Year</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <Input
-                            id="year"
-                            type="number"
-                            placeholder="2024"
-                            value={year}
-                            onChange={e => setYear(e.target.value)}
-                        />
-                    </SidebarGroupContent>
-                </SidebarGroup>
-
-                <SidebarGroup>
-                    <SidebarGroupLabel>Semester</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <Input
-                            id="semester"
-                            placeholder="Fall, Spring, Winter_Online..."
-                            value={semester}
-                            onChange={e => setSemester(e.target.value)}
-                        />
-                    </SidebarGroupContent>
-                </SidebarGroup>
-
                 <SidebarGroup>
                     <SidebarGroupLabel>Department</SidebarGroupLabel>
                     <SidebarGroupContent>
