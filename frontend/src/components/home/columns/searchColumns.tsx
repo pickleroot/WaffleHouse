@@ -33,8 +33,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             accessorKey: "subject",
             header: "Dept",
             meta: {
-                headerClassName: "w-14 min-w-14",
-                cellClassName: "w-14 min-w-14",
+                headerClassName: "w-12 min-w-12",
+                cellClassName: "w-12 min-w-12",
             },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.subject}</Dimmed>,
         },
@@ -42,8 +42,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             accessorKey: "code",
             header: "Code",
             meta: {
-                headerClassName: "w-14 min-w-14",
-                cellClassName: "w-14 min-w-14",
+                headerClassName: "w-12 min-w-12",
+                cellClassName: "w-12 min-w-12",
             },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.code}</Dimmed>,
         },
@@ -51,8 +51,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             accessorKey: "section",
             header: "Section",
             meta: {
-                headerClassName: "w-16 min-w-16",
-                cellClassName: "w-16 min-w-16",
+                headerClassName: "w-14 min-w-14",
+                cellClassName: "w-14 min-w-14",
             },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.section}</Dimmed>,
         },
@@ -69,8 +69,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             accessorKey: "creditHours",
             header: "Credits",
             meta: {
-                headerClassName: "w-16 min-w-16",
-                cellClassName: "w-16 min-w-16",
+                headerClassName: "w-14 min-w-14",
+                cellClassName: "w-14 min-w-14",
             },
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.creditHours}</Dimmed>,
         },
@@ -78,8 +78,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             accessorKey: "openSeats",
             header: "Open Seats",
             meta: {
-                headerClassName: "w-16 min-w-16",
-                cellClassName: "w-16 min-w-16",
+                headerClassName: "w-14 min-w-14",
+                cellClassName: "w-14 min-w-14",
             },
             cell: ({ row }) => {
                 const noSeats = row.original.openSeats === 0;

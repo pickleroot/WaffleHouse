@@ -7,7 +7,7 @@ import {
     type SortingState,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 import {
     Table,
@@ -99,18 +99,11 @@ export function DataTable<TData, TValue>({
                                             <button
                                                 type="button"
                                                 onClick={header.column.getToggleSortingHandler()}
-                                                className="inline-flex items-center gap-1 font-medium text-foreground hover:text-foreground/80"
+                                                className="font-medium text-foreground hover:text-foreground/80"
                                             >
                                                 {flexRender(
                                                     header.column.columnDef.header,
                                                     header.getContext()
-                                                )}
-                                                {header.column.getIsSorted() === "asc" ? (
-                                                    <ChevronUp className="h-3.5 w-3.5" />
-                                                ) : header.column.getIsSorted() === "desc" ? (
-                                                    <ChevronDown className="h-3.5 w-3.5" />
-                                                ) : (
-                                                    <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
                                                 )}
                                             </button>
                                         ) : (
