@@ -137,40 +137,24 @@ export default function CourseRowDetails({ course }: CourseRowDetailsProps) {
                     value={type}
                 />
                 <DetailItem
-                    label="Status"
-                    value={status}
+                    label="Instructor"
+                    value={professors}
                 />
                 <DetailItem
                     label="Credits"
                     value={`${course.creditHours} credit hour${course.creditHours === 1 ? "" : "s"}`}
                 />
                 <DetailItem
-                    label="Open Seats"
-                    value={String(course.openSeats)}
-                />
-                <DetailItem
-                    label="Total Seats"
-                    value={String(course.totalSeats)}
-                />
-                <DetailItem
                     label="Seats"
                     value={seats}
                 />
                 <DetailItem
-                    label="Instructor"
-                    value={professors}
+                    label="Location"
+                    value={course.location || "Location TBD"}
                 />
                 <DetailItem
                     label="Semester"
                     value={formatSemester(course.semester)}
-                />
-                <DetailItem
-                    label="Year"
-                    value={String(course.year)}
-                />
-                <DetailItem
-                    label="Location"
-                    value={course.location || "Location TBD"}
                 />
                 <DetailItem
                     label="Schedule"
