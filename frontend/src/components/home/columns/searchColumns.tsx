@@ -66,15 +66,6 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
             cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.name}</Dimmed>,
         },
         {
-            accessorKey: "creditHours",
-            header: "Credits",
-            meta: {
-                headerClassName: "w-16 min-w-16",
-                cellClassName: "w-16 min-w-16",
-            },
-            cell: ({ row }) => <Dimmed dimmed={isDimmed(row.original.id)}>{row.original.creditHours}</Dimmed>,
-        },
-        {
             accessorKey: "openSeats",
             header: "Open Seats",
             meta: {
