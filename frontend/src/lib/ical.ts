@@ -48,6 +48,16 @@ function formatDateStamp(date: Date): string {
   return `${year}${month}${day}T${hour}${minute}${second}Z`;
 }
 
+function formatLocalDateTime(date: Date): string {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+  return `${year}${month}${day}T${hour}${minute}${second}`;
+}
+
 function parseTimeParts(time: string): [number, number, number] {
   const [hourRaw = "0", minuteRaw = "0", secondRaw = "0"] = time.split(":");
   return [Number(hourRaw), Number(minuteRaw), Number(secondRaw)];
@@ -129,8 +139,8 @@ function buildEvent(course: Course, slot: Timeslot, index: number): string[] | n
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${nowStamp}`,
-    `DTSTART:${formatDateStamp(startDate)}`,
-    `DTEND:${formatDateStamp(endDate)}`,
+    `DTSTART;TZID=America/New_York:${formatLocalDateTime(startDate)}`,
+    `DTEND;TZID=America/New_York:${formatLocalDateTime(endDate)}`,
     `RRULE:FREQ=WEEKLY;BYDAY=${icalDay};COUNT=16`,
     `SUMMARY:${escapeText(summary)}`,
     `DESCRIPTION:${escapeText(description)}`,
@@ -146,6 +156,24 @@ export function buildScheduleIcs(schedule: Course[]): string {
     "CALSCALE:GREGORIAN",
     "PRODID:-//WaffleHouse//Schedule Export//EN",
     "METHOD:PUBLISH",
+    "BEGIN:VTIMEZONE",
+    "TZID:America/New_York",
+    "X-LIC-LOCATION:America/New_York",
+    "BEGIN:DAYLIGHT",
+    "TZOFFSETFROM:-0500",
+    "TZOFFSETTO:-0400",
+    "TZNAME:EDT",
+    "DTSTART:19700308T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+    "END:DAYLIGHT",
+    "BEGIN:STANDARD",
+    "TZOFFSETFROM:-0400",
+    "TZOFFSETTO:-0500",
+    "TZNAME:EST",
+    "DTSTART:19701101T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+    "END:STANDARD",
+    "END:VTIMEZONE",
   ];
 
   schedule.forEach((course) => {
