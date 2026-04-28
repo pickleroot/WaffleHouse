@@ -39,7 +39,7 @@ interface FiltersSidebarProps {
 }
 
 const CREDITS_MIN = 0
-const CREDITS_MAX = 4
+const CREDITS_MAX = 6
 const DAYS: { value: string; label: string }[] = [
     { value: "M", label: "M" },
     { value: "T", label: "T" },
