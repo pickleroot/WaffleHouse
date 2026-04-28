@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Slider } from "@/components/ui/slider"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import {
     Combobox,
     ComboboxChip,
@@ -48,6 +49,26 @@ const DAYS: { value: string; label: string }[] = [
     { value: "F", label: "F" },
 ]
 
+function buildTimeOptions(startHour: number, endHour: number, stepMinutes: number): string[] {
+    const options: string[] = []
+    for (let hour = startHour; hour <= endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += stepMinutes) {
+            if (hour === endHour && minute > 0) break
+            const h = String(hour).padStart(2, "0")
+            const m = String(minute).padStart(2, "0")
+            options.push(`${h}:${m}`)
+        }
+    }
+    return options
+}
+
+function formatTimeLabel(value: string): string {
+    const [h, m] = value.split(":").map(Number)
+    const isPm = h >= 12
+    const hour12 = h % 12 === 0 ? 12 : h % 12
+    return `${hour12}:${String(m).padStart(2, "0")} ${isPm ? "PM" : "AM"}`
+}
+
 function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
     const [dept, setDept] = useState<string | null>(null)
     const [name, setName] = useState("")
@@ -59,6 +80,7 @@ function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
 
     const [subjectOptions, setSubjectOptions] = useState<string[]>([])
     const [facultyOptions, setFacultyOptions] = useState<string[]>([])
+    const timeOptions = useMemo(() => buildTimeOptions(8, 21, 15), [])
 
     useEffect(() => {
         let cancelled = false
@@ -173,24 +195,34 @@ function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
                             ))}
                         </ToggleGroup>
                         <div className="flex gap-2">
-                            <Input
+                            <NativeSelect
                                 id="start-time"
-                                type="time"
-                                min="08:00"
-                                max="21:00"
-                                step="900"
                                 value={startTime}
-                                onChange={e => setStartTime(e.target.value)}
-                            />
-                            <Input
+                                onChange={(e) => setStartTime(e.target.value)}
+                                aria-label="Start time"
+                                className="w-full"
+                            >
+                                <NativeSelectOption value="">Start time</NativeSelectOption>
+                                {timeOptions.map((t) => (
+                                    <NativeSelectOption key={t} value={t}>
+                                        {formatTimeLabel(t)}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
+                            <NativeSelect
                                 id="end-time"
-                                type="time"
-                                min="08:00"
-                                max="21:00"
-                                step="900"
                                 value={endTime}
-                                onChange={e => setEndTime(e.target.value)}
-                            />
+                                onChange={(e) => setEndTime(e.target.value)}
+                                aria-label="End time"
+                                className="w-full"
+                            >
+                                <NativeSelectOption value="">End time</NativeSelectOption>
+                                {timeOptions.map((t) => (
+                                    <NativeSelectOption key={t} value={t}>
+                                        {formatTimeLabel(t)}
+                                    </NativeSelectOption>
+                                ))}
+                            </NativeSelect>
                         </div>
                     </SidebarGroupContent>
                 </SidebarGroup>
