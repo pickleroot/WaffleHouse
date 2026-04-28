@@ -17,7 +17,7 @@ async function getUserScheduleId(userId: string): Promise<number | null> {
     const { data, error } = await supabase
         .from('schedules')
         .select('id')
-        .eq('user', userId)
+        .eq('user_id', userId)
         .maybeSingle();
     if (error) throw error;
     return data?.id ?? null;
@@ -88,20 +88,17 @@ export async function addCourseToSchedule(userId: string, courseId: string) {
     if (scheduleId === null) {
         const { data: newSchedule, error } = await supabase
             .from('schedules')
-            .insert({ user: userId })
+            .upsert({ user_id: userId }, { onConflict: 'user_id' })
             .select('id')
             .single();
         if (error) throw error;
         scheduleId = newSchedule.id;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('enrollments')
-        .insert({ schedule_id: scheduleId, course_id: Number(courseId) })
-        .select()
-        .single();
+        .insert({ schedule_id: scheduleId, course_id: Number(courseId) });
     if (error) throw error;
-    return data;
 }
 
 export async function removeCourseFromSchedule(userId: string, courseId: string) {
