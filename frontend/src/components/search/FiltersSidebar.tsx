@@ -92,7 +92,13 @@ function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
         }
     }, [dept, name, credits, days, startTime, endTime, profs])
 
+    // Skip when all filters are at default values — otherwise mounting the
+    // sidebar (right after a search) would clobber the active search params
+    // with an empty filter query.
     useEffect(() => {
+        const isDefault =
+            !params.dept && !params.name && !params.credits && !params.prof && !params.time
+        if (isDefault) return
         setSearchParams({ kind: "filter", filters: params })
     }, [params, setSearchParams])
 
