@@ -64,6 +64,7 @@ export default function CourseRowDetails({ course }: CourseRowDetailsProps) {
         ? formatCourseTimes(course.times)
         : "No schedule information available"
     const seats = `${course.openSeats} / ${course.totalSeats} seats available`
+    const courseLabel = `${course.subject} ${course.code}-${course.section}`
     const status = course.isOpen ? "Open" : "Closed"
     const type = course.isLab ? "Lab" : "Lecture"
     const [rateMyProfessorState, setRateMyProfessorState] = useState<RateMyProfessorState>({
@@ -119,6 +120,15 @@ export default function CourseRowDetails({ course }: CourseRowDetailsProps) {
 
     return (
         <div className="space-y-5">
+            <div className="space-y-1">
+                <p className="text-lg font-semibold text-foreground">
+                    {course.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    {courseLabel}
+                </p>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <DetailItem
                     label="Department"

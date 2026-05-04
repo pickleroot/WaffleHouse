@@ -17,7 +17,7 @@ async function getUserScheduleId(userId: string): Promise<number | null> {
     const { data, error } = await supabase
         .from('schedules')
         .select('id')
-        .eq('user_id', userId)
+        .eq('user', userId)
         .maybeSingle();
     if (error) throw error;
     return data?.id ?? null;
@@ -30,35 +30,27 @@ export async function getSchedule(userId: string): Promise<Course[]> {
     const scheduleId = await getUserScheduleId(userId);
     if (scheduleId === null) return [];
 
-    const { data: enrollments, error: enrollError } = await supabase
+    const { data: enrollments, error } = await supabase
         .from('enrollments')
-        .select('course_id')
+        .select('course_id, courses(*)')
         .eq('schedule_id', scheduleId);
-    if (enrollError) throw enrollError;
+    if (error) throw error;
     if (!enrollments || enrollments.length === 0) return [];
 
-    const courseIds = enrollments.map((e: any) => e.course_id as number);
-
-    const { data: coursesData, error: coursesError } = await supabase
-        .from('courses')
-        .select('*')
-        .in('id', courseIds);
-    if (coursesError) throw coursesError;
-    if (!coursesData || coursesData.length === 0) return [];
-
+    const courseIds = enrollments.map((e: any) => e.course_id);
     const { data: timesData } = await supabase
         .from('course_times')
         .select('*')
         .in('course_id', courseIds);
 
-    const timesMap = new Map<string, Timeslot[]>();
+    const timesMap = new Map<number, Timeslot[]>();
     (timesData || []).forEach((t: any) => {
-        const key = String(t.course_id);
-        if (!timesMap.has(key)) timesMap.set(key, []);
-        timesMap.get(key)!.push({ day: t.day, start_time: t.start_time, end_time: t.end_time });
+        if (!timesMap.has(t.course_id)) timesMap.set(t.course_id, []);
+        timesMap.get(t.course_id)!.push({ day: t.day, start_time: t.start_time, end_time: t.end_time });
     });
 
-    return (coursesData as any[]).map((c): Course => {
+    return enrollments.map((e: any): Course => {
+        const c = e.courses;
         const year = parseInt(c.semester?.split('_')[0] ?? '0', 10);
         return {
             id: c.id,
@@ -72,7 +64,7 @@ export async function getSchedule(userId: string): Promise<Course[]> {
             totalSeats: c.total_seats,
             year,
             semester: c.semester,
-            times: timesMap.get(String(c.id)) || [],
+            times: timesMap.get(c.id) || [],
             isLab: c.is_lab,
             isOpen: c.is_open,
             location: c.location,
@@ -88,17 +80,20 @@ export async function addCourseToSchedule(userId: string, courseId: string) {
     if (scheduleId === null) {
         const { data: newSchedule, error } = await supabase
             .from('schedules')
-            .upsert({ user_id: userId }, { onConflict: 'user_id' })
+            .insert({ user: userId })
             .select('id')
             .single();
         if (error) throw error;
         scheduleId = newSchedule.id;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('enrollments')
-        .insert({ schedule_id: scheduleId, course_id: Number(courseId) });
+        .insert({ schedule_id: scheduleId, course_id: Number(courseId) })
+        .select()
+        .single();
     if (error) throw error;
+    return data;
 }
 
 export async function removeCourseFromSchedule(userId: string, courseId: string) {

@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { CircleMinus } from "lucide-react"
 import { formatCourseTimes } from "@/lib/utils"
 import type { Course } from "@/lib/types"
 
@@ -28,7 +27,6 @@ export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<Course
                 </button>
             ),
         },
-        { accessorKey: "creditHours", header: "Credits" },
         {
             id: "professor",
             accessorFn: (course) => {
@@ -63,15 +61,8 @@ export function buildScheduleColumns(deps: ScheduleColumnDeps): ColumnDef<Course
             meta: { sticky: true },
             enableSorting: false,
             cell: ({ row }) => (
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="h-7 w-7 text-red-600 hover:bg-red-600 hover:text-white"
-                    aria-label="Remove from Schedule"
-                    title="Remove from Schedule"
-                    onClick={() => onRemove(row.original)}
-                >
-                    <CircleMinus className="h-4 w-4" />
+                <Button variant="destructive" size="sm" onClick={() => onRemove(row.original)}>
+                    Remove
                 </Button>
             ),
         },

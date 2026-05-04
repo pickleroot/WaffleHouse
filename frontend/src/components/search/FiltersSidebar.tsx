@@ -39,7 +39,7 @@ interface FiltersSidebarProps {
 }
 
 const CREDITS_MIN = 0
-const CREDITS_MAX = 4
+const CREDITS_MAX = 6
 const DAYS: { value: string; label: string }[] = [
     { value: "M", label: "M" },
     { value: "T", label: "T" },
@@ -110,11 +110,11 @@ function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
                         >
                             <ComboboxInput placeholder="Department" showClear={!!dept}>
                                 <ComboboxContent>
+                                    <ComboboxEmpty>No departments</ComboboxEmpty>
                                     <ComboboxList>
-                                        <ComboboxEmpty>No departments</ComboboxEmpty>
-                                        {subjectOptions.map(s => (
+                                        {(s: string) => (
                                             <ComboboxItem key={s} value={s}>{s}</ComboboxItem>
-                                        ))}
+                                        )}
                                     </ComboboxList>
                                 </ComboboxContent>
                             </ComboboxInput>
@@ -212,12 +212,15 @@ function FiltersSidebarInner({ setSearchParams }: FiltersSidebarProps) {
                                 ))}
                                 <ComboboxChipsInput placeholder={profs.length ? "" : "Select one or more..."} />
                             </ComboboxChips>
-                            <ComboboxContent>
+                            <ComboboxContent
+                                side="bottom"
+                                collisionAvoidance={{ side: "none", align: "shift", fallbackAxisSide: "none" }}
+                            >
+                                <ComboboxEmpty>No professors</ComboboxEmpty>
                                 <ComboboxList>
-                                    <ComboboxEmpty>No professors</ComboboxEmpty>
-                                    {facultyOptions.map(f => (
+                                    {(f: string) => (
                                         <ComboboxItem key={f} value={f}>{f}</ComboboxItem>
-                                    ))}
+                                    )}
                                 </ComboboxList>
                             </ComboboxContent>
                         </Combobox>

@@ -59,21 +59,16 @@ async function attachTimes(courses: Course[]): Promise<void> {
         .select('*')
         .in('course_id', courseIds);
 
-    if (timesError) {
-        console.error('[attachTimes] Supabase error:', timesError);
-        return;
-    }
-    if (!timesData || timesData.length === 0) return;
+    if (timesError || !timesData) return;
 
-    const timesMap = new Map<string, any[]>();
+    const timesMap = new Map<number, any[]>();
     (timesData as any[]).forEach(time => {
-        const key = String(time.course_id);
-        if (!timesMap.has(key)) timesMap.set(key, []);
-        timesMap.get(key)!.push(time);
+        if (!timesMap.has(time.course_id)) timesMap.set(time.course_id, []);
+        timesMap.get(time.course_id)!.push(time);
     });
 
     courses.forEach(course => {
-        const slots = timesMap.get(String(course.id)) || [];
+        const slots = timesMap.get(course.id) || [];
         course.times = slots.map(t => ({
             day: t.day,
             start_time: t.start_time,

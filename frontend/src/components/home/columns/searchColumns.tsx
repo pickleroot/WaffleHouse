@@ -152,15 +152,8 @@ export function buildSearchColumns(deps: SearchColumnDeps): ColumnDef<Course>[] 
 
                 if (inSchedule) {
                     return (
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="h-7 w-7 text-red-600 hover:bg-red-600 hover:text-white"
-                            aria-label="Remove from Schedule"
-                            title="Remove from Schedule"
-                            onClick={() => onRemove(course)}
-                        >
-                            <CircleMinus className="h-4 w-4" />
+                        <Button variant="destructive" size="sm" onClick={() => onRemove(course)}>
+                            Remove
                         </Button>
                     );
                 }
